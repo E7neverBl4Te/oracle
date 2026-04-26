@@ -440,6 +440,10 @@ local function doFire(remote, payload, resFn, statFn, subFn)
 end
 
 -- ── FIRE ONCE button ──────────────────────────────────────────────────────────
+BUILD_BTN.MouseButton1Click:Connect(function()
+    print("[Oracle] BUILD fired | remote='"..tostring(RBOX.Text).."' | fields="..tostring(G.fRows and #G.fRows or "nil"))
+    -- ... rest of handler
+
 FBTN.MouseButton1Click:Connect(function()
     if scanning then
         FSTAT.Text = "Stop the scan before using target mode"
