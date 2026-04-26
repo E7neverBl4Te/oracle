@@ -440,9 +440,6 @@ local function doFire(remote, payload, resFn, statFn, subFn)
 end
 
 -- ── FIRE ONCE button ──────────────────────────────────────────────────────────
-BUILD_BTN.MouseButton1Click:Connect(function()
-    print("[Oracle] BUILD fired | remote='"..tostring(RBOX.Text).."' | fields="..tostring(G.fRows and #G.fRows or "nil"))
-    -- ... rest of handler
 
 FBTN.MouseButton1Click:Connect(function()
     if scanning then
@@ -472,6 +469,9 @@ FBTN.MouseButton1Click:Connect(function()
     end)
 end)
 
+BUILD_BTN.MouseButton1Click:Connect(function()
+    print("[Oracle] BUILD fired | remote='"..tostring(RBOX.Text).."' | fields="..tostring(G.fRows and #G.fRows or "nil"))
+        
 -- ── BUILD & FIRE button ───────────────────────────────────────────────────────
 BBTN.MouseButton1Click:Connect(function()
     local name = RBOX.Text:match("^%s*(.-)%s*$")
