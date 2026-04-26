@@ -468,10 +468,7 @@ FBTN.MouseButton1Click:Connect(function()
             function(t)    TSUB.Text  = name.."  ·  "..t end)
     end)
 end)
-
-BUILD_BTN.MouseButton1Click:Connect(function()
-    print("[Oracle] BUILD fired | remote='"..tostring(RBOX.Text).."' | fields="..tostring(G.fRows and #G.fRows or "nil"))
-        
+       
 -- ── BUILD & FIRE button ───────────────────────────────────────────────────────
 BBTN.MouseButton1Click:Connect(function()
     local name = RBOX.Text:match("^%s*(.-)%s*$")
