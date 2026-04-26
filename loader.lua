@@ -30,6 +30,8 @@ local CHUNKS = {
     "06_init.lua",
 }
 
+print("[Oracle Debug] rlog type:", type(G.rlog), "hookR type:", type(G.hookR))
+
 for _, name in ipairs(CHUNKS) do
     local ok, err = pcall(function()
         local src    = httpGet(BASE .. name)
