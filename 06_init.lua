@@ -291,7 +291,7 @@ end
 -- core fire-and-watch (used by full scan)
 local function fW(remote, payload, allR, logFn)
     local before = snap(); rlog = G.rlog
-    table.clear(rlog)
+    for k in pairs(rlog) do rlog[k]=nil end
     local conns = hookR(allR)
     local ok    = pcall(function() remote:FireServer(payload) end)
     bump("probes")
@@ -311,7 +311,7 @@ local function fW(remote, payload, allR, logFn)
         bump("responses")
         if logFn then logFn("RESPONSE", "Server replied via "..r.name, r.args, true) end
     end
-    table.clear(rlog)
+    for k in pairs(rlog) do rlog[k]=nil end
     for _, ch in ipairs(dif(before, after)) do
         bump("deltas"); if ch.bad then bump("path") end
         if logFn then
@@ -388,7 +388,7 @@ local function doFire(remote, payload, resFn, statFn, subFn)
     col(RepS); col(workspace)
 
     local before = snap()
-    table.clear(rlog)
+    for k in pairs(rlog) do rlog[k]=nil end
     local conns = hookR(ev)
 
     local ok, err = pcall(function()
@@ -419,7 +419,7 @@ local function doFire(remote, payload, resFn, statFn, subFn)
         resFn("RESPONSE", "Server replied via "..r.name, r.args, true)
         addLog("RESPONSE", "["..remote.Name.."] via "..r.name, r.args, true)
     end
-    table.clear(rlog)
+    for k in pairs(rlog) do rlog[k]=nil end
 
     for _, ch in ipairs(dif(before, after)) do
         hits += 1
