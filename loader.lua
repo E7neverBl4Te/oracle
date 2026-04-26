@@ -28,9 +28,8 @@ local CHUNKS = {
     "04_target.lua",
     "05_compose.lua",
     "06_init.lua",
+    "07_rso.lua",
 }
-
-print("[Oracle Debug] rlog type:", type(G.rlog), "hookR type:", type(G.hookR))
 
 for _, name in ipairs(CHUNKS) do
     local ok, err = pcall(function()

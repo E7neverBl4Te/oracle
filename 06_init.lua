@@ -142,6 +142,47 @@ for _, t in ipairs(TABS) do
     tBtns[t.k] = b
 end
 
+-- G.addTab: allows later chunks (e.g. 07_rso.lua) to register new tabs
+-- at runtime without modifying this file
+G.addTab = function(key, label, page)
+    page.Visible = false
+    table.insert(TABS, {k=key, l=label, p=page})
+    local b = mk("TextButton", {
+        Name                   = key,
+        AutoButtonColor        = false,
+        BackgroundColor3       = Color3.fromRGB(0,0,0),
+        BackgroundTransparency = 1,
+        BorderSizePixel        = 0,
+        Font                   = Enum.Font.GothamSemibold,
+        Text                   = label,
+        TextColor3             = C.MUTED,
+        TextSize               = 11,
+        Size                   = UDim2.new(0, 0, 1, 0),
+        AutomaticSize          = Enum.AutomaticSize.X,
+        ZIndex                 = 6,
+    }, TBROW)
+    corner(6, b)
+    mk("UIPadding", {PaddingLeft=UDim.new(0,12), PaddingRight=UDim.new(0,12)}, b)
+    local ln = mk("Frame", {
+        Name                   = "AL",
+        BackgroundColor3       = C.ACCENT,
+        BackgroundTransparency = 1,
+        BorderSizePixel        = 0,
+        Position               = UDim2.new(0, 8, 1, -3),
+        Size                   = UDim2.new(1, -16, 0, 2),
+        ZIndex                 = 7,
+    }, b)
+    corner(1, ln)
+    b.MouseEnter:Connect(function()
+        if aTab ~= key then tw(b, TI.fast, {TextColor3=C.TEXT}) end
+    end)
+    b.MouseLeave:Connect(function()
+        if aTab ~= key then tw(b, TI.fast, {TextColor3=C.MUTED}) end
+    end)
+    b.MouseButton1Click:Connect(function() swTab(key) end)
+    tBtns[key] = b
+end
+
 swTab("dash")
 
 -- ── Resize grip ───────────────────────────────────────────────────────────────
