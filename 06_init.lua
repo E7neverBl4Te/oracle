@@ -440,7 +440,6 @@ local function doFire(remote, payload, resFn, statFn, subFn)
 end
 
 -- ── FIRE ONCE button ──────────────────────────────────────────────────────────
-
 FBTN.MouseButton1Click:Connect(function()
     if scanning then
         FSTAT.Text = "Stop the scan before using target mode"
@@ -468,7 +467,7 @@ FBTN.MouseButton1Click:Connect(function()
             function(t)    TSUB.Text  = name.."  ·  "..t end)
     end)
 end)
-       
+
 -- ── BUILD & FIRE button ───────────────────────────────────────────────────────
 BBTN.MouseButton1Click:Connect(function()
     local name = RBOX.Text:match("^%s*(.-)%s*$")
