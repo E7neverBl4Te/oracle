@@ -1,6 +1,8 @@
 -- Oracle // 02_oracle.lua
 -- Payloads · State snapshot/diff · Remote helpers · Shared log row builders
-local G      = ...
+local args = {...}
+local G = args[1]
+if not G then error("G table not received") end
 local C      = G.C
 local TAGCOL = G.TAGCOL
 local mk     = G.mk
