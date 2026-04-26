@@ -584,8 +584,8 @@ local function rebuildList()
     end)
 
     RL_COUNT.Text = "OBSERVED ("..#names..")"
-    if #names == 0 then RL_EMPTY.Parent = RL_SCROLL; return end
-    RL_EMPTY.Parent = nil
+    if #names == 0 then RL_EMPTY.Visible = true; return end
+    RL_EMPTY.Visible = false
 
     for i, name in ipairs(names) do
         local rec = OBS[name]
