@@ -471,8 +471,6 @@ end)
        
 -- ── BUILD & FIRE button ───────────────────────────────────────────────────────
 BBTN.MouseButton1Click:Connect(function()
-    print("[Oracle] BUILD fired | remote='"..tostring(RBOX.Text).."' | fields="..tostring(G.fRows and #G.fRows or "nil"))
-BBTN.MouseButton1Click:Connect(function()
     local name = RBOX.Text:match("^%s*(.-)%s*$")
     if name == "" then
         BSTAT.Text = "Select a remote in Target Mode first"
