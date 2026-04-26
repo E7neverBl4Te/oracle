@@ -343,25 +343,24 @@ local PREVTEXT = mk("TextLabel", {
 PTREF[1] = PREVTEXT  -- wire preview ref
 
 -- ── Right: result + fire ──────────────────────────────────────────────────────
-mk("TextLabel", {
-    BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text="RESULT",
-    TextColor3=C.MUTED, TextSize=9, Size=UDim2.new(1,0,0,13),
-    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4, LayoutOrder=3,
-}, CR)
 
-local CRSCR = mk("ScrollingFrame", {
-    BackgroundColor3=C.CARD, BorderSizePixel=0, Size=UDim2.new(1,0,1,-182),
-    ScrollBarThickness=3, ScrollBarImageColor3=C.ACCDIM,
-    CanvasSize=UDim2.fromScale(0,0), AutomaticCanvasSize=Enum.AutomaticSize.Y,
-    ZIndex=4, LayoutOrder=4,
+-- Button dock pinned to bottom — always visible, never covered
+local CR_DOCK = mk("Frame", {
+    BackgroundColor3 = C.SURFACE, BorderSizePixel = 0,
+    Position = UDim2.new(0, 0, 1, -82), Size = UDim2.new(1, 0, 0, 82),
+    ZIndex = 6,
 }, CR)
-corner(6, CRSCR); stroke(C.BORDER, 1, CRSCR); pad(8, 6, CRSCR); listV(CRSCR, 3)
+mk("Frame", {
+    BackgroundColor3 = C.BORDER, BorderSizePixel = 0,
+    Size = UDim2.new(1, -20, 0, 1), Position = UDim2.new(0, 10, 0, 0), ZIndex = 7,
+}, CR_DOCK)
+pad(0, 8, CR_DOCK); listV(CR_DOCK, 6)
 
 local BBTN = mk("TextButton", {
     AutoButtonColor=false, BackgroundColor3=C.ACCENT, BorderSizePixel=0,
     Font=Enum.Font.GothamBold, Text="⬡  BUILD & FIRE", TextColor3=C.WHITE,
-    TextSize=12, Size=UDim2.new(1,0,0,34), ZIndex=4, LayoutOrder=5,
-}, CR)
+    TextSize=12, Size=UDim2.new(1,0,0,34), ZIndex=7, LayoutOrder=1,
+}, CR_DOCK)
 corner(7, BBTN)
 do
     local base = C.ACCENT
@@ -377,8 +376,27 @@ local BSTAT = mk("TextLabel", {
     Text="Select a remote in Target Mode · add fields · fire.",
     TextColor3=C.MUTED, TextSize=9, TextWrapped=true,
     Size=UDim2.new(1,0,0,28), TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=4, LayoutOrder=6,
+    ZIndex=7, LayoutOrder=2,
+}, CR_DOCK)
+
+-- Result label and scroll sit above the dock
+mk("TextLabel", {
+    BackgroundTransparency=1, Font=Enum.Font.GothamBold, Text="RESULT",
+    TextColor3=C.MUTED, TextSize=9, Size=UDim2.new(1,0,0,13),
+    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=4, LayoutOrder=3,
 }, CR)
+
+local CRSCR = mk("ScrollingFrame", {
+    BackgroundColor3=C.CARD, BorderSizePixel=0,
+    -- fixed offset height: total right column minus preview(13+100) minus
+    -- result label(13) minus dock(82) minus listV gaps — leaves clean scroll area
+    Position = UDim2.new(0, 0, 0, 0),
+    Size = UDim2.new(1, 0, 1, -82),
+    ScrollBarThickness=3, ScrollBarImageColor3=C.ACCDIM,
+    CanvasSize=UDim2.fromScale(0,0), AutomaticCanvasSize=Enum.AutomaticSize.Y,
+    ZIndex=4, LayoutOrder=4,
+}, CR)
+corner(6, CRSCR); stroke(C.BORDER, 1, CRSCR); pad(8, 6, CRSCR); listV(CRSCR, 3)
 
 local crN = 0
 local function addCR(t, m, d, h)
