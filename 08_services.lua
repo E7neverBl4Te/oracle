@@ -540,8 +540,6 @@ local function clearResults()
         if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
     end
     RES_EMPTY.Visible = true
-    RES_EMPTY.Parent  = RES_SCROLL
-    RES_EMPTY.LayoutOrder = 1
 end
 
 local resOrd = 0
