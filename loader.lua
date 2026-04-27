@@ -29,6 +29,10 @@ local CHUNKS = {
     "05_compose.lua",
     "06_init.lua",
     "07_rso.lua",
+    "08_services.lua",
+    "09_echo.lua",
+    "10_carrier.lua",
+    "11_tunnel.lua",
 }
 
 for _, name in ipairs(CHUNKS) do
