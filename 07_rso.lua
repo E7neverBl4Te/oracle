@@ -429,9 +429,15 @@ local remRowMap = {}
 
 local function clearSig()
     for _, c in ipairs(SIG_SCROLL:GetChildren()) do
-        if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+        if not c:IsA("UIListLayout") and not c:IsA("UIPadding")
+        and c ~= SIG_EMPTY then
+            pcall(function() c:Destroy() end)
+        end
     end
-    SIG_EMPTY.Parent = SIG_SCROLL; SIG_EMPTY.LayoutOrder = 1
+    if SIG_EMPTY and SIG_EMPTY.Parent == SIG_SCROLL then
+        SIG_EMPTY.Visible    = true
+        SIG_EMPTY.LayoutOrder = 1
+    end
 end
 
 local function renderSig(name)
@@ -440,7 +446,13 @@ local function renderSig(name)
     local sig = rec.sig; if not sig then clearSig(); return end
 
     for _, c in ipairs(SIG_SCROLL:GetChildren()) do
-        if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+        if not c:IsA("UIListLayout") and not c:IsA("UIPadding")
+        and c ~= SIG_EMPTY then
+            pcall(function() c:Destroy() end)
+        end
+    end
+    if SIG_EMPTY and SIG_EMPTY.Parent == SIG_SCROLL then
+        SIG_EMPTY.Visible = false
     end
 
     local ord = 0
@@ -681,3 +693,6 @@ end
 -- from the moment Oracle loads regardless of which tab is visible
 startRSO()
 startLoop()
+
+-- Export OBS so ECHO (09_echo.lua) can read signatures
+G.RSO_OBS = OBS
