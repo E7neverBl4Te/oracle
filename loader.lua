@@ -34,6 +34,7 @@ local CHUNKS = {
     "10_carrier.lua",
     "11_tunnel.lua",
     "12_framework.lua",
+    "13_generator.lua",
 }
 
 for _, name in ipairs(CHUNKS) do
