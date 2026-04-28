@@ -265,20 +265,21 @@ local TOPBAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
 stroke(C.BORDER,1,TOPBAR)
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
     Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},TOPBAR)
-pad(12,0,TOPBAR); listH(TOPBAR,10)
+
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="⬡  SCRIPT GENERATOR",TextColor3=C.ACCENT,TextSize=11,
-    Size=UDim2.new(0,220,1,0),TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=5,LayoutOrder=1},TOPBAR)
+    Size=UDim2.new(0,220,1,0),Position=UDim2.new(0,14,0,0),
+    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
 local GEN_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,140,1,0),TextXAlignment=Enum.TextXAlignment.Right,
-    ZIndex=5,LayoutOrder=2},TOPBAR)
+    Size=UDim2.new(0,140,1,0),Position=UDim2.new(1,-210,0,0),
+    TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 local RUN_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.ACCENT,BorderSizePixel=0,
     Font=Enum.Font.GothamBold,Text="▶  RUN",
     TextColor3=C.WHITE,TextSize=10,
-    Size=UDim2.new(0,60,0,22),ZIndex=5,LayoutOrder=3},TOPBAR)
+    Size=UDim2.new(0,64,0,22),Position=UDim2.new(1,-76,0.5,-11),
+    ZIndex=6},TOPBAR)
 corner(5,RUN_BTN)
 do local base=C.ACCENT
     RUN_BTN.MouseEnter:Connect(function() tw(RUN_BTN,TI.fast,{BackgroundColor3=Color3.new(math.min(base.R+.08,1),math.min(base.G+.08,1),math.min(base.B+.08,1))}) end)
