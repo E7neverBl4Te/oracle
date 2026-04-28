@@ -385,11 +385,11 @@ mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
 pad(12,0,TOPBAR); listH(TOPBAR,10)
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="⬡  FRAMEWORK DETECTION",TextColor3=C.ACCENT,TextSize=11,
-    Size=UDim2.new(1,-200,1,0),TextXAlignment=Enum.TextXAlignment.Left,
+    Size=UDim2.new(0,220,1,0),TextXAlignment=Enum.TextXAlignment.Left,
     ZIndex=5,LayoutOrder=1},TOPBAR)
 local FW_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,120,1,0),TextXAlignment=Enum.TextXAlignment.Right,
+    Size=UDim2.new(0,100,1,0),TextXAlignment=Enum.TextXAlignment.Right,
     ZIndex=5,LayoutOrder=2},TOPBAR)
 local DETECT_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.ACCENT,BorderSizePixel=0,
