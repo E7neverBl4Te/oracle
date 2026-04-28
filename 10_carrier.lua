@@ -350,13 +350,24 @@ local CL = mk("Frame", {BackgroundTransparency=1, BorderSizePixel=0,
 mk("Frame", {BackgroundColor3=C.BORDER, BorderSizePixel=0,
     Size=UDim2.new(0,1,1,0), Position=UDim2.new(1,-1,0,0), ZIndex=4}, CL)
 
--- carrier scroll
+-- carrier selection scroll (rebuilt on each selection)
 local CL_SCROLL = mk("ScrollingFrame", {BackgroundTransparency=1, BorderSizePixel=0,
-    Size=UDim2.new(1,0,1,0),
+    Size=UDim2.new(1,0,0,0),  -- height set below after permanent section is built
     ScrollBarThickness=3, ScrollBarImageColor3=C.ACCDIM,
     CanvasSize=UDim2.fromScale(0,0), AutomaticCanvasSize=Enum.AutomaticSize.Y,
     ZIndex=4}, CL)
 pad(8, 8, CL_SCROLL); listV(CL_SCROLL, 10)
+
+-- permanent section pinned to bottom — never destroyed
+local CL_PERM = mk("Frame", {BackgroundColor3=C.SURFACE, BorderSizePixel=0,
+    Position=UDim2.new(0,0,1,-200), Size=UDim2.new(1,0,0,200),
+    ZIndex=4}, CL)
+mk("Frame", {BackgroundColor3=C.BORDER, BorderSizePixel=0,
+    Size=UDim2.new(1,-16,0,1), Position=UDim2.new(0,8,0,0), ZIndex=5}, CL_PERM)
+pad(8, 4, CL_PERM); listV(CL_PERM, 6)
+
+-- shrink cards scroll so it doesn't overlap permanent section
+CL_SCROLL.Size = UDim2.new(1,0,1,-200)
 
 -- right: observation log
 local CR = mk("Frame", {BackgroundTransparency=1, BorderSizePixel=0,
@@ -583,32 +594,36 @@ local function buildCarrierList()
 
         carrierBtns[car.id] = card
     end
+end  -- end buildCarrierList
 
-    -- ── TeleportData payload builder (always visible below carrier list) ───────
-    local pbHdr = mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-        Size=UDim2.new(1,0,0,14),ZIndex=4,
-        LayoutOrder=#CARRIERS+3},CL_SCROLL)
+-- ── Permanent section: payload builder + DataStore button ────────────────────
+-- Built once, lives in CL_PERM, never destroyed by buildCarrierList
+
+-- section label
+do
+    local pbHdr=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
+        Size=UDim2.new(1,0,0,14),ZIndex=4,LayoutOrder=1},CL_PERM)
     mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
         Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,0.5,0),ZIndex=4},pbHdr)
-    local pbBg=mk("Frame",{BackgroundColor3=C.BG,BorderSizePixel=0,
+    local pbBg=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
         Size=UDim2.fromOffset(120,12),Position=UDim2.new(0,0,0.5,-6),ZIndex=5},pbHdr)
     mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
         Text="TELEPORT PAYLOAD",TextColor3=C.MUTED,TextSize=8,
         Size=UDim2.fromScale(1,1),TextXAlignment=Enum.TextXAlignment.Center,ZIndex=6},pbBg)
+end
 
-    -- payload field scroll
-    PF_SCROLL = mk("ScrollingFrame",{BackgroundColor3=C.CARD,BorderSizePixel=0,
-        Size=UDim2.new(1,0,0,120),ScrollBarThickness=3,
-        ScrollBarImageColor3=C.ACCDIM,CanvasSize=UDim2.fromScale(0,0),
-        AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=4,
-        LayoutOrder=#CARRIERS+4},CL_SCROLL)
-    corner(6,PF_SCROLL); stroke(C.BORDER,1,PF_SCROLL)
-    pad(5,4,PF_SCROLL); listV(PF_SCROLL,3)
+-- payload field scroll (permanent)
+PF_SCROLL=mk("ScrollingFrame",{BackgroundColor3=C.CARD,BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,100),ScrollBarThickness=3,
+    ScrollBarImageColor3=C.ACCDIM,CanvasSize=UDim2.fromScale(0,0),
+    AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=4,LayoutOrder=2},CL_PERM)
+corner(6,PF_SCROLL); stroke(C.BORDER,1,PF_SCROLL)
+pad(5,4,PF_SCROLL); listV(PF_SCROLL,3)
 
-    -- add field button
+-- add field button (permanent)
+do
     local addRow=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-        Size=UDim2.new(1,0,0,22),ZIndex=4,
-        LayoutOrder=#CARRIERS+5},CL_SCROLL)
+        Size=UDim2.new(1,0,0,22),ZIndex=4,LayoutOrder=3},CL_PERM)
     listH(addRow,6)
     local addPF=mk("TextButton",{AutoButtonColor=false,
         BackgroundColor3=C.ACCDIM,BorderSizePixel=0,
@@ -617,42 +632,34 @@ local function buildCarrierList()
         Size=UDim2.new(0,90,0,20),ZIndex=5,LayoutOrder=1},addRow)
     corner(4,addPF); stroke(C.BORDER,1,addPF)
     addPF.MouseButton1Click:Connect(function() addPayloadField() end)
+end
 
-    -- Pre-fill with interesting default fields
-    if #payloadFields == 0 then
-        addPayloadField("role",   "admin")
-        addPayloadField("coins",  "9999")
-        addPayloadField("vip",    "true")
-    else
-        -- Re-parent existing field rows to new PF_SCROLL
-        for _, f in ipairs(payloadFields) do
-            if f.row then f.row.Parent = PF_SCROLL end
-        end
-    end
+-- pre-fill defaults once
+addPayloadField("role",  "admin")
+addPayloadField("coins", "9999")
+addPayloadField("vip",   "true")
 
-    -- DataStore timing probe button
-    local dtBtn=mk("TextButton",{AutoButtonColor=false,
-        BackgroundColor3=C.CARD,BorderSizePixel=0,
-        Font=Enum.Font.GothamBold,Text="⏱  Time DataStore Load",
-        TextColor3=C.TEXT,TextSize=9,
-        Size=UDim2.new(1,0,0,26),ZIndex=4,
-        LayoutOrder=#CARRIERS+6},CL_SCROLL)
-    corner(6,dtBtn); stroke(C.BORDER,1,dtBtn)
-    dtBtn.MouseEnter:Connect(function() tw(dtBtn,TI.fast,{BackgroundColor3=C.SURFACE}) end)
-    dtBtn.MouseLeave:Connect(function() tw(dtBtn,TI.fast,{BackgroundColor3=C.CARD}) end)
-    dtBtn.MouseButton1Click:Connect(function()
-        clearLog(); crN=0
-        addLogSep("DATASTORE TIMING PROBE")
-        CAR_STATUS.Text="timing DataStore..."
-        CAR_STATUS.TextColor3=C.DELTA
-        task.spawn(function()
-            probeDataStoreTiming(addLog, function(results)
-                CAR_STATUS.Text=#results.." timing observations"
-                CAR_STATUS.TextColor3=C.MUTED
-            end)
+-- DataStore timing button (permanent)
+local dtBtn=mk("TextButton",{AutoButtonColor=false,
+    BackgroundColor3=C.CARD,BorderSizePixel=0,
+    Font=Enum.Font.GothamBold,Text="⏱  Time DataStore Load",
+    TextColor3=C.TEXT,TextSize=9,
+    Size=UDim2.new(1,0,0,26),ZIndex=4,LayoutOrder=4},CL_PERM)
+corner(6,dtBtn); stroke(C.BORDER,1,dtBtn)
+dtBtn.MouseEnter:Connect(function() tw(dtBtn,TI.fast,{BackgroundColor3=C.SURFACE}) end)
+dtBtn.MouseLeave:Connect(function() tw(dtBtn,TI.fast,{BackgroundColor3=C.CARD}) end)
+dtBtn.MouseButton1Click:Connect(function()
+    clearLog(); crN=0
+    addLogSep("DATASTORE TIMING PROBE")
+    CAR_STATUS.Text="timing DataStore..."
+    CAR_STATUS.TextColor3=C.DELTA
+    task.spawn(function()
+        probeDataStoreTiming(addLog, function(results)
+            CAR_STATUS.Text=#results.." timing observations"
+            CAR_STATUS.TextColor3=C.MUTED
         end)
     end)
-end
+end)
 
 -- ── Observe existing TeleportData immediately on load ─────────────────────────
 local function autoObserveTeleportData()
