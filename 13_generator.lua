@@ -272,7 +272,7 @@ mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
 local GEN_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,140,1,0),Position=UDim2.new(1,-210,0,0),
+    Size=UDim2.new(0,140,1,0),Position=UDim2.new(1,-220,0,0),
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 local RUN_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.ACCENT,BorderSizePixel=0,
@@ -296,47 +296,42 @@ local GL=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
     Size=UDim2.new(0,1,1,-20),Position=UDim2.new(0.5,0,0,10),ZIndex=4},BODY)
 
--- Remote selector bar
-local REM_BAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
-    Size=UDim2.new(1,0,0,32),ZIndex=4},GL)
+-- Remote selector bar — visible card at top of left panel
+local REM_BAR=mk("Frame",{BackgroundColor3=C.CARD,BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,36),ZIndex=4},GL)
 stroke(C.BORDER,1,REM_BAR)
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
     Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},REM_BAR)
 pad(10,0,REM_BAR); listH(REM_BAR,8)
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
-    Text="Remote",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,50,1,0),TextXAlignment=Enum.TextXAlignment.Left,
+    Text="Remote",TextColor3=C.ACCENT,TextSize=9,
+    Size=UDim2.new(0,52,1,0),TextXAlignment=Enum.TextXAlignment.Left,
     ZIndex=5,LayoutOrder=1},REM_BAR)
-local GEN_REMOTE=mk("TextBox",{BackgroundColor3=C.CARD,BorderSizePixel=0,
+local GEN_REMOTE=mk("TextBox",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
     Text=G.RBOX and G.RBOX.Text or "",
-    PlaceholderText="remote name",
+    PlaceholderText="remote name — e.g. WolfDashEvent",
     PlaceholderColor3=C.MUTED,TextColor3=C.WHITE,
     TextSize=10,Font=Enum.Font.Code,ClearTextOnFocus=false,
     TextXAlignment=Enum.TextXAlignment.Left,
-    Size=UDim2.new(1,-130,0,22),ZIndex=5,LayoutOrder=2},REM_BAR)
+    Size=UDim2.new(1,-160,0,22),ZIndex=5,LayoutOrder=2},REM_BAR)
 corner(5,GEN_REMOTE); stroke(C.BORDER,1,GEN_REMOTE); pad(6,0,GEN_REMOTE)
 
--- repeat controls
+-- repeat controls inline
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="×",TextColor3=C.MUTED,TextSize=11,
     Size=UDim2.new(0,12,1,0),TextXAlignment=Enum.TextXAlignment.Center,
     ZIndex=5,LayoutOrder=3},REM_BAR)
-local GEN_REPS=mk("TextBox",{BackgroundColor3=C.CARD,BorderSizePixel=0,
+local GEN_REPS=mk("TextBox",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
     Text="1",PlaceholderText="1",PlaceholderColor3=C.MUTED,
     TextColor3=C.WHITE,TextSize=10,Font=Enum.Font.Code,
     ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Center,
-    Size=UDim2.new(0,28,0,22),ZIndex=5,LayoutOrder=4},REM_BAR)
+    Size=UDim2.new(0,30,0,22),ZIndex=5,LayoutOrder=4},REM_BAR)
 corner(4,GEN_REPS); stroke(C.BORDER,1,GEN_REPS)
-
-mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
-    Text="ms",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,18,1,0),TextXAlignment=Enum.TextXAlignment.Right,
-    ZIndex=5,LayoutOrder=5},REM_BAR)
 
 -- ── Code editor area ──────────────────────────────────────────────────────────
 local EDITOR_AREA=mk("Frame",{BackgroundColor3=Color3.fromRGB(8,7,12),
     BorderSizePixel=0,
-    Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,1,-168),
+    Position=UDim2.new(0,0,0,36),Size=UDim2.new(1,0,1,-218),
     ClipsDescendants=true,ZIndex=4},GL)
 stroke(C.BORDER,1,EDITOR_AREA)
 
@@ -381,7 +376,7 @@ end)
 
 -- ── Preview panel ─────────────────────────────────────────────────────────────
 local PREV_AREA=mk("Frame",{BackgroundColor3=C.CARD,BorderSizePixel=0,
-    Position=UDim2.new(0,0,1,-168),Size=UDim2.new(1,0,0,100),
+    Position=UDim2.new(0,0,1,-182),Size=UDim2.new(1,0,0,100),
     ZIndex=4},GL)
 stroke(C.BORDER,1,PREV_AREA)
 mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
@@ -407,7 +402,7 @@ mk("UIPadding",{PaddingLeft=UDim.new(0,10),PaddingTop=UDim.new(0,4)},PREV_TEXT)
 
 -- ── Template picker ───────────────────────────────────────────────────────────
 local TMPL_BAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
-    Position=UDim2.new(0,0,1,-68),Size=UDim2.new(1,0,0,68),ZIndex=4},GL)
+    Position=UDim2.new(0,0,1,-82),Size=UDim2.new(1,0,0,82),ZIndex=4},GL)
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
     Size=UDim2.new(1,0,0,1),ZIndex=5},TMPL_BAR)
 pad(8,6,TMPL_BAR); listV(TMPL_BAR,5)

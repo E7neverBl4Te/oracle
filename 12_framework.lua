@@ -389,10 +389,10 @@ mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Size=UDim2.new(0,260,1,0),Position=UDim2.new(0,14,0,0),
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
 
--- status label — right of centre
+-- status label — sits left of button with clear gap
 local FW_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,120,1,0),Position=UDim2.new(1,-210,0,0),
+    Size=UDim2.new(0,130,1,0),Position=UDim2.new(1,-240,0,0),
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 
 -- DETECT button — pinned to right edge
