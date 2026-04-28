@@ -824,6 +824,12 @@ DETECT_BTN.MouseButton1Click:Connect(function()
             or  C.MUTED
 
         addLogSep("SCAN COMPLETE")
+        -- Export detections so 14_rae_bridge.lua can read them
+        if G.exportFWDetections then
+            G.exportFWDetections(scores)
+        else
+            _G.ORACLE_FW_DETECTIONS = scores
+        end
         tw(DETECT_BTN,TI.fast,{BackgroundColor3=C.ACCENT})
         detecting=false
     end)
