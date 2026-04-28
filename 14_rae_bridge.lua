@@ -471,11 +471,11 @@ RAE_BTN.MouseButton1Click:Connect(function()
             end; error("No HTTP function available")
         end
         local ok,err=pcall(function()
-            addLog("INFO","Fetching PaperCuts boot.lua...")
-            local src=httpGet(PC_BASE.."boot.lua")
+            addLog("INFO","Fetching PaperCuts loader.lua...")
+            local src=httpGet(PC_BASE.."loader.lua")
             local fn,pe=loadstring(src)
-            assert(fn,"Parse error: "..tostring(pe))
-            addLog("INFO","Executing boot.lua — _G.PC_ORACLE_BRIDGE active with "..
+            assert(fn,"Parse error in loader.lua: "..tostring(pe))
+            addLog("INFO","Executing PaperCuts loader — _G.PC_ORACLE_BRIDGE active with "..
                 #(_G.PC_ORACLE_BRIDGE.RemoteEvents or {}).." remote entries")
             fn()
         end)
