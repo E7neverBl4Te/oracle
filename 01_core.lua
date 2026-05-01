@@ -84,7 +84,7 @@ local TAGCOL = {
 }
 
 -- ── Window constants ──────────────────────────────────────────────────────────
-local DW, DH   = 700, 500
+local DW, DH   = 820, 520
 local MW, MH   = 340, 280
 local XW, XH   = 960, 680
 local TITLE_H  = 40
@@ -215,14 +215,23 @@ local TBBAR = mk("Frame", {
     Position         = UDim2.new(0, 0, 0, TITLE_H),
     Size             = UDim2.new(1, 0, 0, TAB_H),
     ZIndex           = 5,
+    ClipsDescendants = true,
 }, WIN)
 stroke(C.BORDER, 1, TBBAR)
 
-local TBROW = mk("Frame", {
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    Size            = UDim2.new(1, 0, 1, 0),
-    ZIndex          = 6,
+-- ScrollingFrame so tabs never overflow — scrolls horizontally as tabs are added
+local TBROW = mk("ScrollingFrame", {
+    BackgroundTransparency    = 1,
+    BorderSizePixel           = 0,
+    Size                      = UDim2.new(1, 0, 1, 0),
+    ZIndex                    = 6,
+    ScrollingDirection        = Enum.ScrollingDirection.X,
+    ScrollBarThickness        = 2,
+    ScrollBarImageColor3      = C.ACCDIM,
+    CanvasSize                = UDim2.fromScale(0, 0),
+    AutomaticCanvasSize       = Enum.AutomaticSize.X,
+    -- Hide scrollbar most of the time — appears only when needed
+    ScrollBarImageTransparency = 0.6,
 }, TBBAR)
 mk("UIPadding", {
     PaddingLeft   = UDim.new(0, 10),
