@@ -358,32 +358,40 @@ mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Size=UDim2.new(1,0,0,13),TextXAlignment=Enum.TextXAlignment.Left,
     ZIndex=4,LayoutOrder=2},ML_SCROLL)
 
-local SIG_TYPES = {"Product","Gamepass","Bulk","Purchase"}
+local SIG_TYPES = {"Product","Gamepass","Bulk","Purchase","Auto"}
 local selSigType = "Product"
 local sigTypeBtns = {}
 
-local SIGTYPE_ROW=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
+-- Two-row signal type selector
+local SIGTYPE_ROW1=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
     Size=UDim2.new(1,0,0,24),ZIndex=4,LayoutOrder=3},ML_SCROLL)
-listH(SIGTYPE_ROW,4)
+listH(SIGTYPE_ROW1,3)
+local SIGTYPE_ROW2=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,24),ZIndex=4,LayoutOrder=4},ML_SCROLL)
+listH(SIGTYPE_ROW2,3)
 
-for _, st in ipairs(SIG_TYPES) do
-    local col = SIG_COL[st]
+local function updateSigTypeBtns(sel)
+    for st2,btn in pairs(sigTypeBtns) do
+        local c2 = SIG_COL[st2] or Color3.fromRGB(168,120,255)
+        tw(btn,TI.fast,{
+            BackgroundColor3 = st2==sel and c2 or C.CARD,
+            TextColor3       = st2==sel and Color3.fromRGB(8,8,12) or C.MUTED,
+        })
+    end
+end
+
+for i, st in ipairs(SIG_TYPES) do
+    local col = SIG_COL[st] or Color3.fromRGB(168,120,255)
+    local parent = i <= 4 and SIGTYPE_ROW1 or SIGTYPE_ROW2
     local b=mk("TextButton",{AutoButtonColor=false,
         BackgroundColor3=st==selSigType and col or C.CARD,BorderSizePixel=0,
         Font=Enum.Font.GothamBold,Text=st,
         TextColor3=st==selSigType and Color3.fromRGB(8,8,12) or C.MUTED,
         TextSize=8,Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,
-        ZIndex=5},SIGTYPE_ROW)
+        ZIndex=5},parent)
     corner(4,b); mk("UIPadding",{PaddingLeft=UDim.new(0,7),PaddingRight=UDim.new(0,7)},b)
     b.MouseButton1Click:Connect(function()
-        selSigType=st
-        for st2,btn in pairs(sigTypeBtns) do
-            local c2=SIG_COL[st2]
-            tw(btn,TI.fast,{
-                BackgroundColor3=st2==st and c2 or C.CARD,
-                TextColor3=st2==st and Color3.fromRGB(8,8,12) or C.MUTED,
-            })
-        end
+        selSigType=st; updateSigTypeBtns(st)
     end)
     sigTypeBtns[st]=b
 end
@@ -392,17 +400,17 @@ end
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="PRODUCT ID",TextColor3=C.MUTED,TextSize=9,
     Size=UDim2.new(1,0,0,13),TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=4,LayoutOrder=4},ML_SCROLL)
+    ZIndex=4,LayoutOrder=5},ML_SCROLL)
 local ID_BOX=mk("TextBox",{BackgroundColor3=C.CARD,BorderSizePixel=0,
     Text="",PlaceholderText="numeric ID",
     PlaceholderColor3=C.MUTED,TextColor3=C.WHITE,TextSize=11,Font=Enum.Font.Code,
     ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left,
-    Size=UDim2.new(1,0,0,28),ZIndex=4,LayoutOrder=5},ML_SCROLL)
+    Size=UDim2.new(1,0,0,28),ZIndex=4,LayoutOrder=6},ML_SCROLL)
 corner(6,ID_BOX); stroke(C.BORDER,1,ID_BOX); pad(8,0,ID_BOX)
 
 -- Repeat count
 local REPT_ROW=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-    Size=UDim2.new(1,0,0,22),ZIndex=4,LayoutOrder=6},ML_SCROLL)
+    Size=UDim2.new(1,0,0,22),ZIndex=4,LayoutOrder=7},ML_SCROLL)
 listH(REPT_ROW,8)
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="Repeat",TextColor3=C.MUTED,TextSize=9,
@@ -429,7 +437,7 @@ corner(4,DELAY_BOX); stroke(C.BORDER,1,DELAY_BOX)
 local FIRE_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.ACCENT,BorderSizePixel=0,
     Font=Enum.Font.GothamBold,Text="▶  FIRE SIGNAL",TextColor3=C.WHITE,TextSize=12,
-    Size=UDim2.new(1,0,0,34),ZIndex=4,LayoutOrder=7},ML_SCROLL)
+    Size=UDim2.new(1,0,0,34),ZIndex=4,LayoutOrder=8},ML_SCROLL)
 corner(7,FIRE_BTN)
 do local base=C.ACCENT
     FIRE_BTN.MouseEnter:Connect(function() tw(FIRE_BTN,TI.fast,{BackgroundColor3=Color3.new(math.min(base.R+.08,1),math.min(base.G+.08,1),math.min(base.B+.08,1))}) end)
@@ -440,7 +448,7 @@ end
 local GSE_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.ACCDIM,BorderSizePixel=0,
     Font=Enum.Font.GothamBold,Text="⟳ Load GSE IDs",TextColor3=C.ACCENT,TextSize=9,
-    Size=UDim2.new(1,0,0,26),ZIndex=4,LayoutOrder=8},ML_SCROLL)
+    Size=UDim2.new(1,0,0,26),ZIndex=4,LayoutOrder=9},ML_SCROLL)
 corner(6,GSE_BTN); stroke(C.BORDER,1,GSE_BTN)
 GSE_BTN.MouseEnter:Connect(function() tw(GSE_BTN,TI.fast,{BackgroundColor3=C.ACCENT,TextColor3=Color3.fromRGB(8,8,12)}) end)
 GSE_BTN.MouseLeave:Connect(function() tw(GSE_BTN,TI.fast,{BackgroundColor3=C.ACCDIM,TextColor3=C.ACCENT}) end)
@@ -477,37 +485,36 @@ local function renderCapture(rec)
     lN += 1
 
     local sigCol = SIG_COL[rec.sigType] or C.MUTED
+
+    -- Card is taller — info rows on top, button row pinned to bottom
     local card=mk("Frame",{BackgroundColor3=C.CARD,BorderSizePixel=0,
-        Size=UDim2.new(1,-2,0,46),ZIndex=4,LayoutOrder=lN},LOG_SCROLL)
+        Size=UDim2.new(1,-2,0,68),ZIndex=4,LayoutOrder=lN},LOG_SCROLL)
     corner(7,card); stroke(sigCol,1,card)
 
-    -- color dot
+    -- ── Row 1: dot + type + ID label (y=5) ────────────────────────────────
     local dot=mk("Frame",{BackgroundColor3=sigCol,BorderSizePixel=0,
-        Size=UDim2.fromOffset(8,8),Position=UDim2.new(0,10,0.5,-4),ZIndex=5},card)
+        Size=UDim2.fromOffset(8,8),Position=UDim2.new(0,8,0,8),ZIndex=5},card)
     corner(4,dot)
 
-    -- type label
     mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
-        Text=string.upper(rec.sigType),TextColor3=sigCol,TextSize=10,
-        Size=UDim2.new(0,72,0,18),Position=UDim2.new(0,24,0,4),
+        Text=string.upper(rec.sigType),TextColor3=sigCol,TextSize=9,
+        Size=UDim2.new(0,68,0,16),Position=UDim2.new(0,22,0,4),
         TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},card)
 
-    -- ID label
     local idLbl=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
-        Text=tostring(rec.id),TextColor3=C.WHITE,TextSize=13,
-        Size=UDim2.new(0,160,0,18),Position=UDim2.new(0,100,0,4),
+        Text=tostring(rec.id),TextColor3=C.WHITE,TextSize=12,
+        Size=UDim2.new(1,-100,0,16),Position=UDim2.new(0,92,0,4),
         TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},card)
 
-    -- Resolve name async
     task.spawn(function()
         local name=resolveName(rec.id,rec.sigType)
         if name and idLbl.Parent then
-            idLbl.Text=tostring(rec.id).."  "..name:sub(1,22)
+            idLbl.Text=tostring(rec.id).."  "..name:sub(1,20)
             idLbl.TextColor3=Color3.fromRGB(255,175,70)
         end
     end)
 
-    -- source + purchased badge
+    -- ── Row 2: source badge + fire count (y=24) ────────────────────────────
     local sourceCol = rec.source=="prompt"
         and Color3.fromRGB(255,160,40)
         or  Color3.fromRGB(80,210,100)
@@ -515,65 +522,85 @@ local function renderCapture(rec)
         (rec.purchased and "BOUGHT" or "CANCELLED")
     local sb=mk("Frame",{BackgroundColor3=sourceCol,BorderSizePixel=0,
         Size=UDim2.fromOffset(0,14),AutomaticSize=Enum.AutomaticSize.X,
-        Position=UDim2.new(0,24,0,26),ZIndex=5},card)
+        Position=UDim2.new(0,22,0,24),ZIndex=5},card)
     corner(3,sb); mk("UIPadding",{PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)},sb)
     mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
         Text=sourceTxt,TextColor3=Color3.fromRGB(8,8,12),TextSize=7,
         Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,ZIndex=6},sb)
 
-    -- fire count
     local fcLbl=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
-        Text="fired: 0",TextColor3=C.MUTED,TextSize=9,
-        Size=UDim2.new(0,60,0,14),Position=UDim2.new(0,170,0,26),
+        Text="fired: 0",TextColor3=C.MUTED,TextSize=8,
+        Size=UDim2.new(0,55,0,14),Position=UDim2.new(0,92,0,25),
         TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},card)
 
-    -- buttons: Auto | Copy | ▶ | TUNNEL
-    local function mkBtn2(txt,x,w)
+    local tsLbl=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
+        Text=os.date("%H:%M:%S",math.floor(rec.tick)),TextColor3=C.MUTED,TextSize=8,
+        Size=UDim2.new(0,55,0,14),Position=UDim2.new(0,150,0,25),
+        TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},card)
+
+    -- ── Row 3: button bar (y=44, h=20) ─────────────────────────────────────
+    -- Use a horizontal frame at the bottom so buttons never overlap content
+    local BTNROW=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
+        Position=UDim2.new(0,6,1,-24),Size=UDim2.new(1,-12,0,20),ZIndex=5},card)
+    listH(BTNROW,4)
+
+    local function mkB(txt, col2, tcol)
         local b=mk("TextButton",{AutoButtonColor=false,
-            BackgroundColor3=C.SURFACE,BorderSizePixel=0,
-            Font=Enum.Font.GothamBold,Text=txt,TextColor3=C.MUTED,TextSize=9,
-            Size=UDim2.new(0,w,0,20),Position=UDim2.new(1,-x,0.5,-10),ZIndex=5},card)
-        corner(4,b); stroke(C.BORDER,1,b)
+            BackgroundColor3=col2 or C.SURFACE,BorderSizePixel=0,
+            Font=Enum.Font.GothamBold,Text=txt,
+            TextColor3=tcol or C.MUTED,TextSize=8,
+            Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,
+            ZIndex=6},BTNROW)
+        corner(4,b)
+        mk("UIPadding",{PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6)},b)
+        stroke(C.BORDER,1,b)
         b.MouseEnter:Connect(function() tw(b,TI.fast,{BackgroundColor3=C.CARD}) end)
-        b.MouseLeave:Connect(function() tw(b,TI.fast,{BackgroundColor3=C.SURFACE}) end)
+        b.MouseLeave:Connect(function() tw(b,TI.fast,{BackgroundColor3=col2 or C.SURFACE}) end)
         return b
     end
 
-    local tunnelBtn = mkBtn2("⟳ TUNNEL", 10, 70)
-    local runBtn    = mkBtn2("▶", 86, 24)
-    local copyBtn   = mkBtn2("Copy", 116, 44)
-    local autoBtn   = mkBtn2("Auto", 166, 44)
+    local runBtn    = mkB("▶ Fire")
+    local copyBtn   = mkB("Copy")
+    local autoBtn   = mkB("Auto")
+    local tunnelBtn = mkB("Tunnel", C.ACCDIM, C.ACCENT)
 
-    -- RUN
+    -- ▶ Fire
     runBtn.MouseButton1Click:Connect(function()
         local ok2=fireFakeSignal(rec.sigType,rec.id,addLog)
         if ok2 then
             rec.fired+=1; fcLbl.Text="fired: "..rec.fired
-            runBtn.Text="Sent!"; runBtn.TextColor3=C.ACCENT
-            task.delay(1.5,function() if runBtn.Parent then runBtn.Text="▶"; runBtn.TextColor3=C.MUTED end end)
+            runBtn.Text="Sent ✓"; runBtn.TextColor3=C.ACCENT
+            task.delay(1.5,function()
+                if runBtn.Parent then runBtn.Text="▶ Fire"; runBtn.TextColor3=C.MUTED end
+            end)
         end
     end)
 
-    -- COPY
+    -- Copy
     copyBtn.MouseButton1Click:Connect(function()
         pcall(setclipboard,tostring(rec.id))
-        copyBtn.Text="✓"; copyBtn.TextColor3=C.ACCENT
-        task.delay(1.5,function() if copyBtn.Parent then copyBtn.Text="Copy"; copyBtn.TextColor3=C.MUTED end end)
+        copyBtn.Text="Copied!"; copyBtn.TextColor3=C.ACCENT
+        task.delay(1.5,function()
+            if copyBtn.Parent then copyBtn.Text="Copy"; copyBtn.TextColor3=C.MUTED end
+        end)
     end)
 
-    -- AUTO
+    -- Auto — continuous fire loop
     local autoData={active=false,thread=nil}
     autoBtn.MouseButton1Click:Connect(function()
         if autoData.active then
             autoData.active=false
             if autoData.thread then task.cancel(autoData.thread) end
-            autoBtn.Text="Auto"; autoBtn.TextColor3=C.MUTED; autoBtn.BackgroundColor3=C.SURFACE
+            autoBtn.Text="Auto"
+            autoBtn.TextColor3=C.MUTED
+            autoBtn.BackgroundColor3=C.SURFACE
             tw(card,TI.fast,{BackgroundColor3=C.CARD})
         else
             autoData.active=true
-            autoBtn.Text="Stop"; autoBtn.TextColor3=Color3.fromRGB(255,80,80)
+            autoBtn.Text="■ Stop"
+            autoBtn.TextColor3=Color3.fromRGB(255,80,80)
             autoBtn.BackgroundColor3=Color3.fromRGB(40,15,15)
-            tw(card,TI.fast,{BackgroundColor3=Color3.fromRGB(20,10,5)})
+            tw(card,TI.fast,{BackgroundColor3=Color3.fromRGB(18,8,4)})
             autoData.thread=task.spawn(function()
                 while autoData.active and card.Parent do
                     fireFakeSignal(rec.sigType,rec.id,nil)
@@ -585,17 +612,11 @@ local function renderCapture(rec)
         end
     end)
 
-    -- TUNNEL — pre-fills TUNNEL Mode B with this signal's product ID
+    -- Tunnel — pre-fills TUNNEL Mode B
     tunnelBtn.MouseButton1Click:Connect(function()
-        addLog("INFO",
-            "TUNNEL Mode B pre-filled",
+        addLog("INFO","TUNNEL Mode B pre-filled",
             ("ProductId=%d  Type=%s"):format(rec.id,rec.sigType),true)
-        -- Store for TUNNEL tab to read
-        _G.ORACLE_SEL_PREFILL = {
-            productId = rec.id,
-            sigType   = rec.sigType,
-        }
-        -- Switch to Tunnel tab if addTab is available
+        _G.ORACLE_SEL_PREFILL = {productId=rec.id, sigType=rec.sigType}
         if G.SwitchTab then G.SwitchTab("tunnel") end
     end)
 
@@ -660,13 +681,21 @@ FIRE_BTN.MouseButton1Click:Connect(function()
     local reps  = math.clamp(math.floor(tonumber(REPT_BOX.Text) or 1),1,50)
     local delay = (tonumber(DELAY_BOX.Text) or 0) / 1000
 
+    -- Auto fires all four signal types
+    local typesToFire = selSigType == "Auto"
+        and {"Product","Gamepass","Bulk","Purchase"}
+        or  {selSigType}
+
     addLogSep(("MANUAL FIRE — %s  %d  × %d"):format(selSigType,id,reps))
     task.spawn(function()
         for i=1,reps do
             if i>1 and delay>0 then task.wait(delay) end
-            fireFakeSignal(selSigType, id, addLog)
+            for _, st in ipairs(typesToFire) do
+                fireFakeSignal(st, id, addLog)
+                if #typesToFire > 1 then task.wait(0.05) end
+            end
         end
-        SEL_STATUS.Text = ("fired %d × %d"):format(id,reps)
+        SEL_STATUS.Text = ("fired %d × %d"):format(id, reps * #typesToFire)
         SEL_STATUS.TextColor3 = Color3.fromRGB(80,210,100)
     end)
 end)
