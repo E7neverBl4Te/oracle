@@ -268,11 +268,36 @@ mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
 
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="⬡  SCRIPT GENERATOR",TextColor3=C.ACCENT,TextSize=11,
-    Size=UDim2.new(0,220,1,0),Position=UDim2.new(0,14,0,0),
+    Size=UDim2.new(0,180,1,0),Position=UDim2.new(0,14,0,0),
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
+
+-- Remote input lives in the topbar — always visible, never covered
+mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
+    Text="Remote",TextColor3=C.MUTED,TextSize=9,
+    Size=UDim2.new(0,48,1,0),Position=UDim2.new(0,196,0,0),
+    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
+local GEN_REMOTE=mk("TextBox",{BackgroundColor3=C.CARD,BorderSizePixel=0,
+    Text=G.RBOX and G.RBOX.Text or "",
+    PlaceholderText="remote name",
+    PlaceholderColor3=C.MUTED,TextColor3=C.WHITE,TextSize=10,Font=Enum.Font.Code,
+    ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left,
+    Size=UDim2.new(0,180,0,22),Position=UDim2.new(0,246,0.5,-11),ZIndex=6},TOPBAR)
+corner(5,GEN_REMOTE); stroke(C.BORDER,1,GEN_REMOTE); pad(6,0,GEN_REMOTE)
+
+mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
+    Text="×",TextColor3=C.MUTED,TextSize=11,
+    Size=UDim2.new(0,14,1,0),Position=UDim2.new(0,430,0,0),
+    TextXAlignment=Enum.TextXAlignment.Center,ZIndex=5},TOPBAR)
+local GEN_REPS=mk("TextBox",{BackgroundColor3=C.CARD,BorderSizePixel=0,
+    Text="1",PlaceholderText="1",PlaceholderColor3=C.MUTED,
+    TextColor3=C.WHITE,TextSize=10,Font=Enum.Font.Code,
+    ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Center,
+    Size=UDim2.new(0,30,0,22),Position=UDim2.new(0,446,0.5,-11),ZIndex=6},TOPBAR)
+corner(4,GEN_REPS); stroke(C.BORDER,1,GEN_REPS)
+
 local GEN_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,140,1,0),Position=UDim2.new(1,-220,0,0),
+    Size=UDim2.new(0,80,1,0),Position=UDim2.new(1,-158,0,0),
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 local RUN_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.ACCENT,BorderSizePixel=0,
@@ -296,42 +321,10 @@ local GL=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
     Size=UDim2.new(0,1,1,-20),Position=UDim2.new(0.5,0,0,10),ZIndex=4},BODY)
 
--- Remote selector bar — visible card at top of left panel
-local REM_BAR=mk("Frame",{BackgroundColor3=C.CARD,BorderSizePixel=0,
-    Size=UDim2.new(1,0,0,36),ZIndex=4},GL)
-stroke(C.BORDER,1,REM_BAR)
-mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
-    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},REM_BAR)
-pad(10,0,REM_BAR); listH(REM_BAR,8)
-mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
-    Text="Remote",TextColor3=C.ACCENT,TextSize=9,
-    Size=UDim2.new(0,52,1,0),TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=5,LayoutOrder=1},REM_BAR)
-local GEN_REMOTE=mk("TextBox",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
-    Text=G.RBOX and G.RBOX.Text or "",
-    PlaceholderText="remote name — e.g. WolfDashEvent",
-    PlaceholderColor3=C.MUTED,TextColor3=C.WHITE,
-    TextSize=10,Font=Enum.Font.Code,ClearTextOnFocus=false,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    Size=UDim2.new(1,-160,0,22),ZIndex=5,LayoutOrder=2},REM_BAR)
-corner(5,GEN_REMOTE); stroke(C.BORDER,1,GEN_REMOTE); pad(6,0,GEN_REMOTE)
-
--- repeat controls inline
-mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
-    Text="×",TextColor3=C.MUTED,TextSize=11,
-    Size=UDim2.new(0,12,1,0),TextXAlignment=Enum.TextXAlignment.Center,
-    ZIndex=5,LayoutOrder=3},REM_BAR)
-local GEN_REPS=mk("TextBox",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
-    Text="1",PlaceholderText="1",PlaceholderColor3=C.MUTED,
-    TextColor3=C.WHITE,TextSize=10,Font=Enum.Font.Code,
-    ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Center,
-    Size=UDim2.new(0,30,0,22),ZIndex=5,LayoutOrder=4},REM_BAR)
-corner(4,GEN_REPS); stroke(C.BORDER,1,GEN_REPS)
-
 -- ── Code editor area ──────────────────────────────────────────────────────────
 local EDITOR_AREA=mk("Frame",{BackgroundColor3=Color3.fromRGB(8,7,12),
     BorderSizePixel=0,
-    Position=UDim2.new(0,0,0,36),Size=UDim2.new(1,0,1,-218),
+    Position=UDim2.new(0,0,0,0),Size=UDim2.new(1,0,1,-182),
     ClipsDescendants=true,ZIndex=4},GL)
 stroke(C.BORDER,1,EDITOR_AREA)
 
