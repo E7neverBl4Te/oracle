@@ -91,59 +91,180 @@ local function fireFakeSignal(sigType, id, logFn)
     return ok, err
 end
 
--- Passive listener — hooks MPS purchase completion signals
-local listenerConns = {}
+-- Passive listener — hooks both MPS prompt methods AND completion signals
+-- Method hooks capture the ID the moment the game initiates a purchase prompt
+-- Signal hooks capture the final confirmed/cancelled result
+local listenerConns  = {}
+local hookedMethods  = {}
 local listenerActive = false
 
 local function startListener(onCapture)
     if listenerActive then return end
     listenerActive = true
 
-    local function hookSig(sigName, sigType)
-        local ok, conn = pcall(function()
-            return MPS[sigName]:Connect(function(uid, id, purchased)
-                if SUPPRESS > 0 then return end  -- our own fire, ignore
-                local rec = {
-                    sigType   = sigType,
-                    id        = id,
-                    uid       = uid,
-                    purchased = purchased,
-                    tick      = tick(),
-                    fired     = 0,
-                    autoActive= false,
-                }
-                table.insert(CAPTURED, rec)
-                if onCapture then onCapture(rec) end
-
-                -- Bridge to AVD observations
-                if G.AVD_OBS then
-                    local obsName = "MPS:"..sigType
-                    local obs = G.AVD_OBS[obsName]
-                    if not obs then
-                        G.AVD_OBS[obsName] = {
-                            fires={}, argShapes={}, lastFire=0, totalFires=0,
-                            stateChanges=0, fireIntervals={}, rapidCount=0
-                        }
-                        obs = G.AVD_OBS[obsName]
-                    end
-                    obs.totalFires += 1
-                    obs.lastFire    = tick()
+    -- Helper: record a capture and call onCapture
+    local function doCapture(sigType, id, uid, purchased, source)
+        if SUPPRESS > 0 then return end
+        -- Deduplicate — same id+type within 1 second = same event
+        for _, existing in ipairs(CAPTURED) do
+            if existing.id == id and existing.sigType == sigType
+            and (tick() - existing.tick) < 1.0 then
+                -- Update source if we now have completion info
+                if source == "signal" then
+                    existing.purchased = purchased
+                    existing.completed = true
                 end
-            end)
-        end)
-        if ok then table.insert(listenerConns, conn) end
+                return
+            end
+        end
+        local rec = {
+            sigType   = sigType,
+            id        = id,
+            uid       = uid or LP.UserId,
+            purchased = purchased,
+            source    = source,   -- "prompt" or "signal"
+            tick      = tick(),
+            fired     = 0,
+            autoActive= false,
+            completed = source == "signal",
+        }
+        table.insert(CAPTURED, rec)
+        if onCapture then onCapture(rec) end
+
+        -- Bridge to AVD observations
+        if G.AVD_OBS then
+            local obsName = "MPS:"..sigType
+            if not G.AVD_OBS[obsName] then
+                G.AVD_OBS[obsName] = {
+                    fires={},argShapes={},lastFire=0,totalFires=0,
+                    stateChanges=0,fireIntervals={},rapidCount=0
+                }
+            end
+            G.AVD_OBS[obsName].totalFires += 1
+            G.AVD_OBS[obsName].lastFire    = tick()
+        end
     end
 
-    hookSig("PromptProductPurchaseFinished", "Product")
-    hookSig("PromptGamePassPurchaseFinished", "Gamepass")
-    hookSig("PromptBulkPurchaseFinished",     "Bulk")
-    hookSig("PromptPurchaseFinished",         "Purchase")
+    -- ── Hook MPS PROMPT METHODS (fires when game initiates purchase UI) ────────
+    -- This is the primary capture path — catches the ID before the dialog appears
+    local promptHooks = {
+        {method="PromptGamePassPurchase",  sigType="Gamepass",
+         idArg=2},  -- PromptGamePassPurchase(player, gamePassId)
+        {method="PromptProductPurchase",   sigType="Product",
+         idArg=2},  -- PromptProductPurchase(player, productId)
+        {method="PromptPurchase",          sigType="Purchase",
+         idArg=2},  -- PromptPurchase(player, assetId)
+        {method="PromptBulkPurchase",      sigType="Bulk",
+         idArg=2},  -- PromptBulkPurchase(player, productId)
+    }
+
+    for _, hook in ipairs(promptHooks) do
+        local methodName = hook.method
+        local sigType    = hook.sigType
+        local idArg      = hook.idArg
+
+        -- Try hookfunction (executor-level) first, fall back to method replacement
+        local orig = nil
+        local hooked = false
+
+        -- Method 1: hookfunction (available in Synapse/Xeno/etc.)
+        local ok1 = pcall(function()
+            if hookfunction then
+                orig = MPS[methodName]
+                hookfunction(orig, function(self, ...)
+                    local args = {...}
+                    local id   = args[idArg - 1]  -- -1 because self is implicit
+                    if type(id) == "number" then
+                        doCapture(sigType, id, LP.UserId, nil, "prompt")
+                    end
+                    return orig(self, ...)
+                end)
+                hooked = true
+            end
+        end)
+
+        -- Method 2: Replace via __newindex if hookfunction unavailable
+        if not hooked then
+            local ok2 = pcall(function()
+                local origMethod = MPS[methodName]
+                if type(origMethod) == "function" then
+                    orig = origMethod
+                    MPS[methodName] = function(self, ...)
+                        local args = {...}
+                        local id   = args[idArg - 1]
+                        if type(id) == "number" then
+                            doCapture(sigType, id, LP.UserId, nil, "prompt")
+                        end
+                        return origMethod(self, ...)
+                    end
+                    hookedMethods[methodName] = {orig=origMethod}
+                    hooked = true
+                end
+            end)
+        end
+
+        -- Method 3: getconnections / firesignal approach via executor
+        if not hooked then
+            -- Last resort — scan existing connections on the method's signal
+            local ok3 = pcall(function()
+                if getconnections then
+                    -- Hook any connection that calls this method
+                    local conns2 = getconnections(MPS[methodName])
+                    if conns2 then
+                        for _, c in ipairs(conns2) do
+                            if c.Function then
+                                local origFn = c.Function
+                                c.Function = function(...)
+                                    local args = {...}
+                                    local id = args[idArg]
+                                    if type(id) == "number" then
+                                        doCapture(sigType, id, LP.UserId, nil, "prompt")
+                                    end
+                                    return origFn(...)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+
+    -- ── Hook COMPLETION SIGNALS (fires after dialog dismissed) ────────────────
+    local function hookSig(sigName, sigType)
+        local ok, conn = pcall(function()
+            return MPS[sigName]:Connect(function(uidOrPlayer, id, purchased)
+                -- PromptGamePassPurchaseFinished passes Player obj not userId
+                local uid
+                if type(uidOrPlayer) == "number" then
+                    uid = uidOrPlayer
+                elseif typeof(uidOrPlayer) == "Instance" then
+                    local ok2,n=pcall(function() return uidOrPlayer.UserId end)
+                    uid = ok2 and n or LP.UserId
+                else
+                    uid = LP.UserId
+                end
+                doCapture(sigType, id, uid, purchased, "signal")
+            end)
+        end)
+        if ok and conn then table.insert(listenerConns, conn) end
+    end
+
+    hookSig("PromptProductPurchaseFinished",  "Product")
+    hookSig("PromptGamePassPurchaseFinished",  "Gamepass")
+    hookSig("PromptBulkPurchaseFinished",      "Bulk")
+    hookSig("PromptPurchaseFinished",          "Purchase")
 end
 
 local function stopListener()
     listenerActive = false
     for _, c in ipairs(listenerConns) do pcall(function() c:Disconnect() end) end
     listenerConns = {}
+    -- Restore hooked methods
+    for methodName, data in pairs(hookedMethods) do
+        pcall(function() MPS[methodName] = data.orig end)
+    end
+    hookedMethods = {}
 end
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -386,11 +507,19 @@ local function renderCapture(rec)
         end
     end)
 
-    -- timestamp
-    mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
-        Text=os.date("%H:%M:%S",math.floor(rec.tick)),TextColor3=C.MUTED,TextSize=9,
-        Size=UDim2.new(0,60,0,14),Position=UDim2.new(0,100,0,26),
-        TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},card)
+    -- source + purchased badge
+    local sourceCol = rec.source=="prompt"
+        and Color3.fromRGB(255,160,40)
+        or  Color3.fromRGB(80,210,100)
+    local sourceTxt = rec.source=="prompt" and "PROMPT" or
+        (rec.purchased and "BOUGHT" or "CANCELLED")
+    local sb=mk("Frame",{BackgroundColor3=sourceCol,BorderSizePixel=0,
+        Size=UDim2.fromOffset(0,14),AutomaticSize=Enum.AutomaticSize.X,
+        Position=UDim2.new(0,24,0,26),ZIndex=5},card)
+    corner(3,sb); mk("UIPadding",{PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)},sb)
+    mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
+        Text=sourceTxt,TextColor3=Color3.fromRGB(8,8,12),TextSize=7,
+        Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,ZIndex=6},sb)
 
     -- fire count
     local fcLbl=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
