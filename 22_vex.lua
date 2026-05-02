@@ -893,7 +893,7 @@ local FIND_EMPTY=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Size=UDim2.new(1,0,0,60),TextXAlignment=Enum.TextXAlignment.Center,
     ZIndex=5,LayoutOrder=1},FIND_SCROLL)
 
--- right: execution log
+-- right panel: progress bar + log scroll + pinned result card
 local VR=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
     Position=UDim2.new(0,240,0,0),Size=UDim2.new(1,-240,1,0),ZIndex=3},BODY)
 
@@ -905,6 +905,42 @@ local PROG_BAR=mk("Frame",{BackgroundColor3=Color3.fromRGB(180,30,30),
     BorderSizePixel=0,Size=UDim2.new(0,0,1,0),ZIndex=6},PROG_BG)
 corner(2,PROG_BAR)
 
+-- result card pinned to bottom — outside LOG_SCROLL so it's always visible
+local RESULT_CARD=mk("Frame",{BackgroundColor3=Color3.fromRGB(14,4,4),
+    BorderSizePixel=0,
+    Position=UDim2.new(0,0,1,-96),
+    Size=UDim2.new(1,0,0,96),
+    ZIndex=6,Visible=false},VR)
+corner(0,RESULT_CARD)
+mk("Frame",{BackgroundColor3=Color3.fromRGB(255,40,40),BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,2),Position=UDim2.new(0,0,0,0),ZIndex=7},RESULT_CARD)
+pad(10,6,RESULT_CARD); listV(RESULT_CARD,4)
+
+local RESULT_TITLE=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
+    Text="OPTIMAL PAYLOAD",TextColor3=Color3.fromRGB(255,80,80),TextSize=11,
+    Size=UDim2.new(1,0,0,16),TextXAlignment=Enum.TextXAlignment.Left,
+    ZIndex=7,LayoutOrder=1},RESULT_CARD)
+local RESULT_PAYLOAD=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
+    Text="",TextColor3=Color3.fromRGB(255,175,70),TextSize=10,TextWrapped=true,
+    Size=UDim2.new(1,0,0,24),
+    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=7,LayoutOrder=2},RESULT_CARD)
+
+local RESULT_BTNROW=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,26),ZIndex=7,LayoutOrder=3},RESULT_CARD)
+listH(RESULT_BTNROW,6)
+local RESULT_COPY=mk("TextButton",{AutoButtonColor=false,
+    BackgroundColor3=Color3.fromRGB(180,30,30),BorderSizePixel=0,
+    Font=Enum.Font.GothamBold,Text="Copy Payload",TextColor3=C.WHITE,TextSize=9,
+    Size=UDim2.new(0,100,1,0),ZIndex=8,LayoutOrder=1},RESULT_BTNROW)
+corner(5,RESULT_COPY)
+local RESULT_FIRE=mk("TextButton",{AutoButtonColor=false,
+    BackgroundColor3=Color3.fromRGB(140,20,20),BorderSizePixel=0,
+    Font=Enum.Font.GothamBold,Text="▶ Fire Optimal",TextColor3=C.WHITE,TextSize=9,
+    Size=UDim2.new(0,110,1,0),ZIndex=8,LayoutOrder=2},RESULT_BTNROW)
+corner(5,RESULT_FIRE)
+
+-- LOG_SCROLL fills space above result card
+-- Size adjusts dynamically when result card is shown/hidden
 local LOG_SCROLL=mk("ScrollingFrame",{BackgroundTransparency=1,BorderSizePixel=0,
     Position=UDim2.new(0,0,0,4),Size=UDim2.new(1,0,1,-4),
     ScrollBarThickness=4,ScrollBarImageColor3=C.ACCDIM,
@@ -922,32 +958,15 @@ local LOG_EMPTY=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Size=UDim2.new(1,0,0,100),TextXAlignment=Enum.TextXAlignment.Center,
     ZIndex=5,LayoutOrder=1},LOG_SCROLL)
 
--- result card (shown after completion)
-local RESULT_CARD=mk("Frame",{BackgroundColor3=Color3.fromRGB(12,5,5),
-    BorderSizePixel=0,Size=UDim2.new(1,-16,0,0),
-    AutomaticSize=Enum.AutomaticSize.Y,
-    Position=UDim2.new(0,8,0,4),ZIndex=6,Visible=false},LOG_SCROLL)
-corner(8,RESULT_CARD); stroke(Color3.fromRGB(255,80,80),1,RESULT_CARD)
-pad(12,8,RESULT_CARD); listV(RESULT_CARD,5)
-
-local RESULT_TITLE=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
-    Text="OPTIMAL PAYLOAD",TextColor3=Color3.fromRGB(255,80,80),TextSize=12,
-    Size=UDim2.new(1,0,0,18),TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=7,LayoutOrder=1},RESULT_CARD)
-local RESULT_PAYLOAD=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
-    Text="",TextColor3=Color3.fromRGB(255,175,70),TextSize=10,TextWrapped=true,
-    Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,
-    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=7,LayoutOrder=2},RESULT_CARD)
-local RESULT_COPY=mk("TextButton",{AutoButtonColor=false,
-    BackgroundColor3=Color3.fromRGB(180,30,30),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="Copy Payload",TextColor3=C.WHITE,TextSize=9,
-    Size=UDim2.new(0,100,0,22),ZIndex=7,LayoutOrder=3},RESULT_CARD)
-corner(5,RESULT_COPY)
-local RESULT_FIRE=mk("TextButton",{AutoButtonColor=false,
-    BackgroundColor3=Color3.fromRGB(140,20,20),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="▶ Fire Optimal",TextColor3=C.WHITE,TextSize=9,
-    Size=UDim2.new(0,110,0,22),ZIndex=7,LayoutOrder=4},RESULT_CARD)
-corner(5,RESULT_FIRE)
+-- Show/hide result card and resize log scroll accordingly
+local function showResultCard(show)
+    RESULT_CARD.Visible = show
+    if show then
+        LOG_SCROLL.Size = UDim2.new(1,0,1,-100)  -- shrink to make room
+    else
+        LOG_SCROLL.Size = UDim2.new(1,0,1,-4)
+    end
+end
 
 -- log helpers
 local vN=0
@@ -964,7 +983,7 @@ local function clearLog()
         if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
     end
     vN=0; LOG_EMPTY.Visible=true
-    RESULT_CARD.Visible=false
+    showResultCard(false)
     tw(PROG_BAR,TI.fast,{Size=UDim2.new(0,0,1,0)})
 end
 
@@ -1027,6 +1046,10 @@ local function refreshFindings()
             selFinding = f
             TARGET_BOX.Text = f.remote
             refreshFindings()
+            -- Visual "armed" state — RUN button pulses to show it's ready
+            tw(RUN_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(220,40,40)})
+            VEX_STATUS.Text = "armed — "..f.remote
+            VEX_STATUS.TextColor3 = Color3.fromRGB(255,120,40)
         end)
     end
 end
@@ -1074,7 +1097,7 @@ RUN_BTN.MouseButton1Click:Connect(function()
                 VEX_STATUS.Text = "⚡ CODE EXEC — "..path:upper()
                 VEX_STATUS.TextColor3 = Color3.fromRGB(255,80,80)
 
-                RESULT_CARD.Visible   = true
+                showResultCard(true)
                 RESULT_CARD.BackgroundColor3 = Color3.fromRGB(16,4,4)
                 stroke(RESULT_CARD.Parent and
                     RESULT_CARD:FindFirstChildOfClass("UIStroke") or
@@ -1159,7 +1182,7 @@ RUN_BTN.MouseButton1Click:Connect(function()
                     tostring(session.finalDepth)
                 VEX_STATUS.TextColor3 = Color3.fromRGB(255,160,40)
 
-                RESULT_CARD.Visible = true
+                showResultCard(true)
                 RESULT_TITLE.Text   = "OPTIMAL PAYLOAD"
                 RESULT_TITLE.TextColor3 = Color3.fromRGB(255,80,80)
                 RESULT_PAYLOAD.Text = ps
