@@ -97,8 +97,15 @@ end
 local listenerConns  = {}
 local hookedMethods  = {}
 local listenerActive = false
+local captureCallback = nil  -- current onCapture function
 
 local function startListener(onCapture)
+    -- Always register the render callback — this is what was broken.
+    -- The guard was blocking renderCapture from being registered
+    -- when auto-start had already set listenerActive=true.
+    captureCallback = onCapture
+
+    -- Only attach hooks once
     if listenerActive then return end
     listenerActive = true
 
@@ -109,7 +116,6 @@ local function startListener(onCapture)
         for _, existing in ipairs(CAPTURED) do
             if existing.id == id and existing.sigType == sigType
             and (tick() - existing.tick) < 1.0 then
-                -- Update source if we now have completion info
                 if source == "signal" then
                     existing.purchased = purchased
                     existing.completed = true
@@ -122,16 +128,16 @@ local function startListener(onCapture)
             id        = id,
             uid       = uid or LP.UserId,
             purchased = purchased,
-            source    = source,   -- "prompt" or "signal"
+            source    = source,
             tick      = tick(),
             fired     = 0,
             autoActive= false,
             completed = source == "signal",
         }
         table.insert(CAPTURED, rec)
-        if onCapture then onCapture(rec) end
+        -- Use captureCallback so re-registration via LISTEN button works
+        if captureCallback then captureCallback(rec) end
 
-        -- Bridge to AVD observations
         if G.AVD_OBS then
             local obsName = "MPS:"..sigType
             if not G.AVD_OBS[obsName] then
@@ -257,10 +263,10 @@ local function startListener(onCapture)
 end
 
 local function stopListener()
-    listenerActive = false
+    listenerActive  = false
+    captureCallback = nil
     for _, c in ipairs(listenerConns) do pcall(function() c:Disconnect() end) end
     listenerConns = {}
-    -- Restore hooked methods
     for methodName, data in pairs(hookedMethods) do
         pcall(function() MPS[methodName] = data.orig end)
     end
@@ -726,14 +732,12 @@ GSE_BTN.MouseButton1Click:Connect(function()
 end)
 
 -- ── Export ────────────────────────────────────────────────────────────────────
-G.SEL_CAPTURED      = CAPTURED
+G.SEL_CAPTURED       = CAPTURED
 G.sel_fireFakeSignal = fireFakeSignal
 
--- Auto-start listener passively
-startListener(function(rec)
-    -- silent capture even when tab isn't open
-    -- renders when tab is switched to
-end)
+-- Do NOT auto-start here — the onCapture callback that renders cards
+-- is defined below (renderCapture). Auto-starting with a no-op here
+-- sets listenerActive=true and blocks the real callback from registering.
 
 if G.addTab then
     G.addTab("seluwia","Seluwia",P_SEL)
