@@ -44,6 +44,13 @@ local CHUNKS = {
     "20_tsr.lua",
     "21_seluwia.lua",
     "22_vex.lua",
+    "23_netmap.lua",
+    "24_intercept.lua",
+    "25_boundary.lua",
+    "26_tgui.lua",
+    "27_repmap.lua",
+    "28_sside.lua",
+    "29_grant.lua",
 }
 
 for _, name in ipairs(CHUNKS) do
