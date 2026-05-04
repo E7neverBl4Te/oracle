@@ -273,12 +273,35 @@ local function buildToolsPanel(result)
     clearContent()
     TITLE_LBL.Text = "⚔ TOOLS & WEAPONS"
 
-    -- Collect tool names from deltas + backpack
+    -- Collect tool names from multiple sources
     local tools = {}
+    local seen  = {}
+    local function addTool(name, extra)
+        if not name or name=="" or name=="nil" or seen[name] then return end
+        seen[name]=true
+        table.insert(tools, setmetatable(extra or {}, {__index={name=name}}))
+        tools[#tools].name = name
+    end
+
     -- From confirmed deltas
     for _,delta in ipairs(result.deltas or {}) do
-        if delta.av and delta.av ~= "" and delta.av ~= "nil" then
-            table.insert(tools, {name=delta.av, path=delta.path})
+        if delta.av then addTool(delta.av, {path=delta.path}) end
+    end
+    -- From GRANT_RESULTS hits
+    if G.GRANT_RESULTS then
+        for _,gr in ipairs(G.GRANT_RESULTS) do
+            if gr.category=="tools" then
+                for _,hit in ipairs(gr.hits or {}) do
+                    -- extract tool names from payload tag
+                    local tag = hit.payload or ""
+                    for word in tostring(tag):gmatch("[A-Z][a-zA-Z]+") do
+                        addTool(word)
+                    end
+                    for _,d in ipairs(hit.deltas or {}) do
+                        if d.av then addTool(d.av,{path=d.path}) end
+                    end
+                end
+            end
         end
     end
     -- From character backpack
@@ -469,24 +492,24 @@ local function buildCurrencyPanel(result)
     clearContent()
     TITLE_LBL.Text = "💰 CURRENCY & ECONOMY"
 
-    -- Collect currency names from deltas
+    -- Collect currency names from deltas + leaderstats + GRANT hits
     local currencies = {}
+    local seenC = {}
+    local function addCurr(name, extra)
+        if not name or seenC[name] then return end
+        seenC[name]=true
+        local entry = extra or {}; entry.name=name
+        table.insert(currencies, entry)
+    end
+
     local currKeys = {"coins","cash","gems","gold","tokens","credits","money",
                       "points","bucks","diamonds","stars","crystals","currency"}
     for _,delta in ipairs(result.deltas or {}) do
-        local pathL=delta.path:lower()
+        local pathL=(delta.path or ""):lower()
         for _,ck in ipairs(currKeys) do
             if pathL:find(ck) then
                 local cname=delta.path:match("[^%.]+$") or ck
-                local found=false
-                for _,c2 in ipairs(currencies) do if c2.name==cname then found=true;break end end
-                if not found then
-                    table.insert(currencies,{
-                        name=cname,
-                        path=delta.path,
-                        current=tonumber(delta.av) or 0,
-                    })
-                end
+                addCurr(cname,{path=delta.path,current=tonumber(delta.av) or 0})
                 break
             end
         end
@@ -657,18 +680,21 @@ local function buildItemsPanel(result)
     TITLE_LBL.Text = "📦 ITEMS & INVENTORY"
 
     local items={}
+    local seenI={}
+    local function addItem(name,extra)
+        if not name or name=="" or name=="nil" or seenI[name] then return end
+        seenI[name]=true; local e=extra or {}; e.name=name; table.insert(items,e)
+    end
     for _,delta in ipairs(result.deltas or {}) do
-        if delta.av and delta.av~="" and delta.av~="nil" then
-            table.insert(items,{name=delta.av,path=delta.path})
-        end
+        if delta.av then addItem(delta.av,{path=delta.path}) end
     end
     if G.GRANT_RESULTS then
         for _,gr in ipairs(G.GRANT_RESULTS) do
-            if gr.category=="items" and gr.bestPath then
-                local pStr=tostring(gr.bestPath.payload or "")
-                for word in pStr:gmatch('"([^"]+)"') do
-                    local f=false; for _,it in ipairs(items) do if it.name==word then f=true;break end end
-                    if not f and #word>1 then table.insert(items,{name=word}) end
+            if gr.category=="items" then
+                for _,hit in ipairs(gr.hits or {}) do
+                    for _,d in ipairs(hit.deltas or {}) do
+                        if d.av then addItem(d.av,{path=d.path}) end
+                    end
                 end
             end
         end

@@ -1005,7 +1005,30 @@ FIRE_BTN.MouseButton1Click:Connect(function()
 
             IMGUI_BTN.MouseButton1Click:Connect(function()
                 if G.showGrantUI then
-                    G.showGrantUI(cat.id, results)
+                    -- Build a safe result object the IMGUI panels can consume
+                    -- Merge confirmation result with any cached GRANT_RESULTS data
+                    local safeResult = {
+                        confirmed = results and results.confirmed,
+                        evidence  = results and results.evidence or "",
+                        remote    = results and results.remote or "",
+                        payload   = results and results.payload or {},
+                        source    = results and results.source or "",
+                        deltas    = {},
+                        responses = {},
+                    }
+                    -- Pull deltas from GRANT_RESULTS if available
+                    if G.GRANT_RESULTS then
+                        for _,gr in ipairs(G.GRANT_RESULTS) do
+                            if gr.category == cat.id then
+                                for _,hit in ipairs(gr.hits or {}) do
+                                    for _,d in ipairs(hit.deltas or {}) do
+                                        table.insert(safeResult.deltas, d)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    G.showGrantUI(cat.id, safeResult)
                 else
                     addLog("INFO","GRANT UI not loaded yet",
                         "30_grantui.lua must be in loader")
