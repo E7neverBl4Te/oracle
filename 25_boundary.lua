@@ -372,30 +372,35 @@ mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     TextColor3=Color3.fromRGB(255,40,40),TextSize=11,
     Size=UDim2.new(0,310,1,0),Position=UDim2.new(0,14,0,0),
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
-
 local BND_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,160,1,0),Position=UDim2.new(1,-376,0,0),
+    Size=UDim2.new(1,-324,1,0),Position=UDim2.new(0,320,0,0),
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 
--- remote input in topbar
+-- control bar — target input + action buttons, all absolute positioned
+local CTRLBAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
+    Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,0,30),ZIndex=4},P_BND)
+stroke(C.BORDER,1,CTRLBAR)
+mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=4},CTRLBAR)
+
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="Target",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,46,1,0),Position=UDim2.new(1,-362,0,0),
-    TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
+    Size=UDim2.new(0,46,1,0),Position=UDim2.new(0,8,0,0),
+    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},CTRLBAR)
 
 local TARGET_BOX=mk("TextBox",{BackgroundColor3=C.CARD,BorderSizePixel=0,
     Text=G.RBOX and G.RBOX.Text or "",
     PlaceholderText="remote name",
     PlaceholderColor3=C.MUTED,TextColor3=C.WHITE,TextSize=10,Font=Enum.Font.Code,
     ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left,
-    Size=UDim2.new(0,160,0,22),Position=UDim2.new(1,-300,0.5,-11),ZIndex=6},TOPBAR)
+    Size=UDim2.new(0,200,0,22),Position=UDim2.new(0,58,0.5,-11),ZIndex=5},CTRLBAR)
 corner(5,TARGET_BOX); stroke(C.BORDER,1,TARGET_BOX); pad(6,0,TARGET_BOX)
 
 local TEST_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=Color3.fromRGB(180,30,30),BorderSizePixel=0,
     Font=Enum.Font.GothamBold,Text="⬡ TEST",TextColor3=C.WHITE,TextSize=10,
-    Size=UDim2.new(0,62,0,22),Position=UDim2.new(1,-130,0.5,-11),ZIndex=6},TOPBAR)
+    Size=UDim2.new(0,66,0,22),Position=UDim2.new(0,268,0.5,-11),ZIndex=5},CTRLBAR)
 corner(5,TEST_BTN)
 do local base=Color3.fromRGB(180,30,30)
     TEST_BTN.MouseEnter:Connect(function() tw(TEST_BTN,TI.fast,{BackgroundColor3=Color3.new(math.min(base.R+.08,1),math.min(base.G+.08,1),math.min(base.B+.08,1))}) end)
@@ -405,14 +410,55 @@ end
 local SCAN_ALL=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.CARD,BorderSizePixel=0,
     Font=Enum.Font.GothamBold,Text="⚡ All Remotes",TextColor3=C.TEXT,TextSize=9,
-    Size=UDim2.new(0,96,0,22),Position=UDim2.new(1,-60,0.5,-11),ZIndex=6},TOPBAR)
+    Size=UDim2.new(0,100,0,22),Position=UDim2.new(0,344,0.5,-11),ZIndex=5},CTRLBAR)
 corner(5,SCAN_ALL); stroke(C.BORDER,1,SCAN_ALL)
 SCAN_ALL.MouseEnter:Connect(function() tw(SCAN_ALL,TI.fast,{BackgroundColor3=C.SURFACE}) end)
 SCAN_ALL.MouseLeave:Connect(function() tw(SCAN_ALL,TI.fast,{BackgroundColor3=C.CARD}) end)
 
+-- STOP button — aborts SCAN_ALL mid-run
+local STOP_BTN=mk("TextButton",{AutoButtonColor=false,
+    BackgroundColor3=Color3.fromRGB(50,15,15),BorderSizePixel=0,
+    Font=Enum.Font.GothamBold,Text="⬛ STOP",TextColor3=Color3.fromRGB(255,80,80),TextSize=9,
+    Size=UDim2.new(0,68,0,22),Position=UDim2.new(0,454,0.5,-11),ZIndex=5},CTRLBAR)
+corner(5,STOP_BTN); stroke(Color3.fromRGB(255,80,80),1,STOP_BTN)
+STOP_BTN.MouseEnter:Connect(function() tw(STOP_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(80,20,20)}) end)
+STOP_BTN.MouseLeave:Connect(function() tw(STOP_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(50,15,15)}) end)
+
+-- CLEAR button
+local CLEAR_BTN2=mk("TextButton",{AutoButtonColor=false,
+    BackgroundColor3=C.CARD,BorderSizePixel=0,
+    Font=Enum.Font.GothamBold,Text="⌫ CLR",TextColor3=C.MUTED,TextSize=9,
+    Size=UDim2.new(0,54,0,22),Position=UDim2.new(0,532,0.5,-11),ZIndex=5},CTRLBAR)
+corner(5,CLEAR_BTN2); stroke(C.BORDER,1,CLEAR_BTN2)
+CLEAR_BTN2.MouseEnter:Connect(function() tw(CLEAR_BTN2,TI.fast,{BackgroundColor3=C.SURFACE}) end)
+CLEAR_BTN2.MouseLeave:Connect(function() tw(CLEAR_BTN2,TI.fast,{BackgroundColor3=C.CARD}) end)
+
+-- abort flag — STOP_BTN sets this, SCAN_ALL loop checks it
+local scanAborted = false
+
+STOP_BTN.MouseButton1Click:Connect(function()
+    scanAborted = true
+    tw(STOP_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(80,20,20)})
+    BND_STATUS.Text = "stopped"
+    BND_STATUS.TextColor3 = C.MUTED
+    tw(SCAN_ALL,TI.fast,{BackgroundColor3=C.CARD})
+    addLog("INFO","⬛ Scan stopped by user",
+        "Results so far are in the left panel")
+end)
+
+CLEAR_BTN2.MouseButton1Click:Connect(function()
+    clearLog()
+    allResults={}
+    for _,c in ipairs(RES_SCROLL:GetChildren()) do
+        if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+    end
+    RES_EMPTY.Visible=true
+    BND_STATUS.Text="idle"; BND_STATUS.TextColor3=C.MUTED
+end)
+
 -- body
 local BODY=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-    Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,1,-32),ZIndex=3},P_BND)
+    Position=UDim2.new(0,0,0,62),Size=UDim2.new(1,0,1,-62),ZIndex=3},P_BND)
 
 -- left: results list
 local BL=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
@@ -652,7 +698,9 @@ SCAN_ALL.MouseButton1Click:Connect(function()
         return
     end
     scanning=true
+    scanAborted=false
     tw(SCAN_ALL,TI.fast,{BackgroundColor3=Color3.fromRGB(35,32,55)})
+    tw(STOP_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(120,20,20)})
     clearLog()
     allResults={}
 
@@ -664,16 +712,31 @@ SCAN_ALL.MouseButton1Click:Connect(function()
         if r.instance then table.insert(remotes,r.instance) end
     end
 
-    addLogSep(("BOUNDARY SCAN — %d remotes"):format(#remotes))
+    addLogSep(("BOUNDARY SCAN — %d remotes — press ⬛ STOP to abort"):format(#remotes))
 
     task.spawn(function()
         for i,remote in ipairs(remotes) do
+            if scanAborted then
+                addLogSep(("⬛ STOPPED at %d / %d — results above are valid"):format(
+                    i-1, #remotes))
+                break
+            end
+
             BND_STATUS.Text=("testing %d/%d: %s"):format(i,#remotes,remote.Name)
             BND_STATUS.TextColor3=Color3.fromRGB(255,80,80)
             tw(PROG_BAR,TI.fast,{Size=UDim2.new(i/#remotes,0,1,0)})
 
             addLogSep(remote.Name)
             local result=testBoundary(remote,addLog,nil,nil)
+
+            if scanAborted then
+                -- Include the last completed result before stopping
+                table.insert(allResults,result)
+                addResultCard(result)
+                addLogSep(("⬛ STOPPED at %d / %d"):format(i, #remotes))
+                break
+            end
+
             table.insert(allResults,result)
             addResultCard(result)
             task.wait(0.3)
@@ -684,19 +747,23 @@ SCAN_ALL.MouseButton1Click:Connect(function()
             return a.level.severity < b.level.severity
         end)
 
-        -- Summary
         local l3count=0
         for _,r in ipairs(allResults) do
             if r.level.severity<=1 then l3count+=1 end
         end
 
-        addLogSep(("SCAN COMPLETE — %d L3 boundaries found / %d tested"):format(
-            l3count,#remotes))
-        BND_STATUS.Text=l3count.." L3 found / "..#remotes.." tested"
+        if not scanAborted then
+            addLogSep(("SCAN COMPLETE — %d L3 boundaries / %d tested"):format(
+                l3count, #remotes))
+        end
+        BND_STATUS.Text=l3count.." L3 / "..#allResults.." tested"..
+            (scanAborted and " (stopped)" or "")
         BND_STATUS.TextColor3=l3count>0 and Color3.fromRGB(255,40,40) or C.MUTED
-        tw(PROG_BAR,TI.fast,{Size=UDim2.new(1,0,1,0)})
+        tw(PROG_BAR,TI.fast,{Size=UDim2.new(#allResults/#remotes,0,1,0)})
         tw(SCAN_ALL,TI.fast,{BackgroundColor3=C.CARD})
+        tw(STOP_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(50,15,15)})
         scanning=false
+        scanAborted=false
     end)
 end)
 

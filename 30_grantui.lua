@@ -417,72 +417,124 @@ local function buildToolsPanel(result)
         updateSel(); rebuildDots()
     end)
 
-    -- Info card
-    local infoCard=mkCard(CONTENT,142,50)
-    local infoLbl=Instance.new("TextLabel")
-    infoLbl.BackgroundTransparency=1; infoLbl.Font=Enum.Font.Code
-    infoLbl.TextColor3=OC.MUTED; infoLbl.TextSize=9; infoLbl.TextWrapped=true
-    infoLbl.Text="Server-confirmed grant path.\nTool will be placed in your Backpack."
-    infoLbl.Size=UDim2.new(1,-16,1,-8); infoLbl.Position=UDim2.fromOffset(8,4)
-    infoLbl.TextXAlignment=Enum.TextXAlignment.Left; infoLbl.Parent=infoCard
+    -- Validation status card — shows what kind of server trust this grant has
+    local valCard=mkCard(CONTENT,142,50)
+    do
+        local pathType="UNCONFIRMED"; local pathCol=OC.AMBER; local pathDesc="No server path found yet"
+        -- Check BOUNDARY results
+        if G.BOUNDARY_RESULTS then
+            for _,br in ipairs(G.BOUNDARY_RESULTS) do
+                if br.level and br.level.severity<=1 then
+                    pathType="L3 BOUNDARY CONFIRMED"; pathCol=OC.GREEN
+                    pathDesc="Server trusts client state — "..br.remote; break
+                end
+            end
+        end
+        -- Check VEX
+        if pathType=="UNCONFIRMED" and G.VEX_SESSIONS then
+            for _,vs2 in pairs(G.VEX_SESSIONS) do
+                if vs2.finalPayload and vs2.finalDepth and vs2.finalDepth>=5 then
+                    pathType="VEX PATH CONFIRMED"; pathCol=OC.GREEN
+                    pathDesc="Deep execution path confirmed — depth "..vs2.finalDepth; break
+                end
+            end
+        end
+        -- Check AVD
+        if pathType=="UNCONFIRMED" and G.AVD_FINDINGS then
+            for _,f in ipairs(G.AVD_FINDINGS) do
+                if f.vuln and f.vuln.id=="NO_VALID" then
+                    pathType="AVD: NO VALIDATION"; pathCol=OC.AMBER
+                    pathDesc="Remote has no server validation — "..f.remote; break
+                end
+            end
+        end
+        -- Check GRANT results
+        if G.GRANT_RESULTS then
+            for _,gr in ipairs(G.GRANT_RESULTS) do
+                if gr.category=="tools" and gr.bestPath then
+                    pathType="GRANT CONFIRMED"; pathCol=OC.GREEN
+                    pathDesc="Probe score "..gr.bestPath.score.." — "..gr.bestPath.remote; break
+                end
+            end
+        end
+        local dot=Instance.new("Frame")
+        dot.BackgroundColor3=pathCol; dot.BorderSizePixel=0
+        dot.Size=UDim2.fromOffset(8,8); dot.Position=UDim2.fromOffset(10,10); dot.Parent=valCard
+        local dc=Instance.new("UICorner"); dc.CornerRadius=UDim.new(1,0); dc.Parent=dot
+        local tl=Instance.new("TextLabel")
+        tl.BackgroundTransparency=1; tl.Font=Enum.Font.GothamBold
+        tl.Text=pathType; tl.TextColor3=pathCol; tl.TextSize=9
+        tl.Size=UDim2.new(1,-24,0,13); tl.Position=UDim2.fromOffset(22,6)
+        tl.TextXAlignment=Enum.TextXAlignment.Left; tl.Parent=valCard
+        local dl=Instance.new("TextLabel")
+        dl.BackgroundTransparency=1; dl.Font=Enum.Font.Code
+        dl.Text=pathDesc; dl.TextColor3=OC.MUTED; dl.TextSize=8; dl.TextWrapped=true
+        dl.Size=UDim2.new(1,-12,0,22); dl.Position=UDim2.fromOffset(6,22)
+        dl.TextXAlignment=Enum.TextXAlignment.Left; dl.Parent=valCard
+    end
 
-    -- GRANT button
+    -- GRANT button — server-only path
     local grantBtn=mkGrantBtn("▶ GRANT SELECTED TOOL", OC.GREEN, CONTENT, 206)
     grantBtn.MouseButton1Click:Connect(function()
         local t=tools[idx]
         if not t then return end
-        STATUS_LBL.Text="Granting "..t.name.."..."
+
+        -- Find best BOUNDARY-confirmed or AVD-confirmed remote for this category
+        local bestRemote=nil; local bestPayload=nil
+        if G.GRANT_RESULTS then
+            for _,gr in ipairs(G.GRANT_RESULTS) do
+                if gr.category=="tools" and gr.bestPath then
+                    bestRemote=gr.bestPath.remote
+                    bestPayload={
+                        action="give", item=t.name,
+                        player=LP.Name, userId=LP.UserId,
+                        tool=t.name, grant=true,
+                    }
+                    break
+                end
+            end
+        end
+
+        if not bestRemote then
+            STATUS_LBL.Text="⚠ No server-confirmed path — run GRANT first"
+            STATUS_LBL.TextColor3=OC.AMBER; return
+        end
+
+        STATUS_LBL.Text="Sending to server: "..t.name
         STATUS_LBL.TextColor3=OC.AMBER
 
         task.spawn(function()
-            -- Use best confirmed remote + payload from GRANT
-            local bestRemote=nil; local bestPayload=nil
-            if G.GRANT_RESULTS then
-                for _,gr in ipairs(G.GRANT_RESULTS) do
-                    if gr.category=="tools" and gr.bestPath then
-                        bestRemote=gr.bestPath.remote
-                        bestPayload={action="give",item=t.name,player=LP.Name,
-                            userId=LP.UserId}
-                        break
-                    end
-                end
-            end
-            -- If tool instance exists, equip directly
-            if t.instance then
-                local clone=t.instance:Clone()
-                clone.Parent=LP.Backpack or LP:FindFirstChildOfClass("Backpack")
-                flashConfirmed("✓ "..t.name.." granted (local)")
-            elseif bestRemote then
-                fireGrantPayload(bestRemote, bestPayload)
-                task.wait(0.5)
-                flashConfirmed("✓ "..t.name.." sent to server")
-            else
-                flashConfirmed("⚠ No server path — check GRANT tab")
-                STATUS_LBL.TextColor3=OC.AMBER
-            end
-        end)
-    end)
+            -- Snapshot inventory BEFORE fire so we can detect what the server added
+            local before={}
+            local bp=LP:FindFirstChildOfClass("Backpack")
+            if bp then for _,item in ipairs(bp:GetChildren()) do before[item.Name]=true end end
+            local ch=LP.Character
+            if ch then for _,item in ipairs(ch:GetChildren()) do
+                if item:IsA("Tool") then before[item.Name]=true end
+            end end
 
-    -- FIRE ALL button (grants all found tools)
-    local allBtn=mkGrantBtn("▶ GRANT ALL FOUND TOOLS", OC.MUTED, CONTENT, 258)
-    allBtn.MouseButton1Click:Connect(function()
-        task.spawn(function()
-            for _,t in ipairs(tools) do
-                if t.instance then
-                    local clone=t.instance:Clone()
-                    clone.Parent=LP.Backpack or LP:FindFirstChildOfClass("Backpack")
-                elseif G.GRANT_RESULTS then
-                    for _,gr in ipairs(G.GRANT_RESULTS) do
-                        if gr.category=="tools" and gr.bestPath then
-                            fireGrantPayload(gr.bestPath.remote,
-                                {action="give",item=t.name,player=LP.Name,userId=LP.UserId})
-                            break
-                        end
-                    end
-                end
-                task.wait(0.12)
+            local ok=fireGrantPayload(bestRemote, bestPayload)
+            if not ok then
+                STATUS_LBL.Text="⚠ Remote fire failed"; STATUS_LBL.TextColor3=OC.AMBER; return
             end
-            flashConfirmed("✓ All "..#tools.." tool(s) granted")
+
+            -- Wait for server replication then check what appeared
+            task.wait(0.8)
+            local appeared={}
+            if bp then for _,item in ipairs(bp:GetChildren()) do
+                if not before[item.Name] then table.insert(appeared,item.Name) end
+            end end
+            if ch then for _,item in ipairs(ch:GetChildren()) do
+                if item:IsA("Tool") and not before[item.Name] then
+                    table.insert(appeared,item.Name) end
+            end end
+
+            if #appeared>0 then
+                flashConfirmed("✓ SERVER GRANTED: "..table.concat(appeared,", "))
+            else
+                STATUS_LBL.Text="Fired — server processing (no new item detected yet)"
+                STATUS_LBL.TextColor3=OC.MUTED
+            end
         end)
     end)
 end

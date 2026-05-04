@@ -996,30 +996,40 @@ FIRE_BTN.MouseButton1Click:Connect(function()
                 end
             end
 
-            COPY_BTN.MouseButton1Click:Connect(function()
-                pcall(setclipboard,payloadStr2)
+            -- Capture category snapshot so closures don't capture stale selCat
+            local thisCat    = cat
+            local thisResult = result
+            local thisPayloadStr = payloadStr2
+
+            -- Disconnect any previous connections before wiring new ones
+            -- (prevents stacking from multiple ATTEMPT GRANT runs)
+            COPY_BTN:ClearAllChildren()  -- no-op but harmless
+            if COPY_BTN._conn  then pcall(function() COPY_BTN._conn:Disconnect()  end) end
+            if IMGUI_BTN._conn then pcall(function() IMGUI_BTN._conn:Disconnect() end) end
+            if AGAIN_BTN._conn then pcall(function() AGAIN_BTN._conn:Disconnect() end) end
+
+            COPY_BTN._conn = COPY_BTN.MouseButton1Click:Connect(function()
+                pcall(setclipboard, thisPayloadStr)
                 COPY_BTN.Text="Copied!"; task.delay(1.5,function()
                     if COPY_BTN.Parent then COPY_BTN.Text="Copy Payload" end
                 end)
             end)
 
-            IMGUI_BTN.MouseButton1Click:Connect(function()
+            IMGUI_BTN._conn = IMGUI_BTN.MouseButton1Click:Connect(function()
                 if G.showGrantUI then
-                    -- Build a safe result object the IMGUI panels can consume
-                    -- Merge confirmation result with any cached GRANT_RESULTS data
                     local safeResult = {
-                        confirmed = results and results.confirmed,
-                        evidence  = results and results.evidence or "",
-                        remote    = results and results.remote or "",
-                        payload   = results and results.payload or {},
-                        source    = results and results.source or "",
+                        confirmed = thisResult and thisResult.confirmed,
+                        evidence  = thisResult and thisResult.evidence or "",
+                        remote    = thisResult and thisResult.remote or "",
+                        payload   = thisResult and thisResult.payload or {},
+                        source    = thisResult and thisResult.source or "",
                         deltas    = {},
                         responses = {},
+                        category  = thisCat.id,
                     }
-                    -- Pull deltas from GRANT_RESULTS if available
                     if G.GRANT_RESULTS then
                         for _,gr in ipairs(G.GRANT_RESULTS) do
-                            if gr.category == cat.id then
+                            if gr.category == thisCat.id then
                                 for _,hit in ipairs(gr.hits or {}) do
                                     for _,d in ipairs(hit.deltas or {}) do
                                         table.insert(safeResult.deltas, d)
@@ -1028,23 +1038,23 @@ FIRE_BTN.MouseButton1Click:Connect(function()
                             end
                         end
                     end
-                    G.showGrantUI(cat.id, safeResult)
+                    G.showGrantUI(thisCat.id, safeResult)
                 else
-                    addLog("INFO","GRANT UI not loaded yet",
-                        "30_grantui.lua must be in loader")
+                    addLog("INFO","GRANT UI not loaded — check loader")
                 end
             end)
 
-            AGAIN_BTN.MouseButton1Click:Connect(function()
-                if not result.payload or not result.remote then return end
+            AGAIN_BTN._conn = AGAIN_BTN.MouseButton1Click:Connect(function()
+                if not thisResult.payload or not thisResult.remote then return end
                 addLogSep("FIRING CONFIRMED GRANT PATH AGAIN")
-                local remote=findR(result.remote)
-                if remote and result.payload then
+                local remote=findR(thisResult.remote)
+                if remote and thisResult.payload then
                     local r2=fireGrantProbe(remote,
-                        type(result.payload)=="table" and
-                        (result.payload[1] and result.payload or {result.payload}) or
-                        {result.payload})
-                    local conf2,ev2=cat.confirm(r2.before,r2.after,r2.deltas)
+                        type(thisResult.payload)=="table" and
+                        (thisResult.payload[1] and thisResult.payload
+                         or {thisResult.payload}) or
+                        {thisResult.payload})
+                    local conf2,ev2=thisCat.confirm(r2.before,r2.after,r2.deltas)
                     addLog(conf2 and "FINDING" or "INFO",
                         conf2 and "Grant re-confirmed" or "No confirmation this time",
                         ev2 or ("Deltas: "..#r2.deltas.."  Responses: "..#r2.responses),
