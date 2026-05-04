@@ -729,7 +729,7 @@ CHECK_BTN.MouseButton1Click:Connect(function()
                 true)
             for i,remote in ipairs(r.remotes or {}) do
                 if i > 20 then
-                    addLog("INFO","... and "..#r.remotes-20.." more remotes")
+                    addLog("INFO","... and "..tostring(#r.remotes-20).." more remotes")
                     break
                 end
                 addLog("INFO","Remote: "..remote)
