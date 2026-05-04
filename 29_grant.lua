@@ -905,10 +905,15 @@ local COPY_BTN=mk("TextButton",{AutoButtonColor=false,
     Font=Enum.Font.GothamBold,Text="Copy Payload",TextColor3=C.WHITE,TextSize=9,
     Size=UDim2.new(0,100,1,0),ZIndex=8,LayoutOrder=1},RES_BTNS)
 corner(5,COPY_BTN)
+local IMGUI_BTN=mk("TextButton",{AutoButtonColor=false,
+    BackgroundColor3=Color3.fromRGB(60,40,120),BorderSizePixel=0,
+    Font=Enum.Font.GothamBold,Text="⬡ Show IMGUI",TextColor3=C.WHITE,TextSize=9,
+    Size=UDim2.new(0,100,1,0),ZIndex=8,LayoutOrder=2},RES_BTNS)
+corner(5,IMGUI_BTN)
 local AGAIN_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=Color3.fromRGB(20,70,20),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="▶ Fire Best Path Again",TextColor3=C.WHITE,TextSize=9,
-    Size=UDim2.new(0,140,1,0),ZIndex=8,LayoutOrder=2},RES_BTNS)
+    Font=Enum.Font.GothamBold,Text="▶ Fire Again",TextColor3=C.WHITE,TextSize=9,
+    Size=UDim2.new(0,100,1,0),ZIndex=8,LayoutOrder=3},RES_BTNS)
 corner(5,AGAIN_BTN)
 
 local LOG_SCROLL=mk("ScrollingFrame",{BackgroundTransparency=1,BorderSizePixel=0,
@@ -996,6 +1001,15 @@ FIRE_BTN.MouseButton1Click:Connect(function()
                 COPY_BTN.Text="Copied!"; task.delay(1.5,function()
                     if COPY_BTN.Parent then COPY_BTN.Text="Copy Payload" end
                 end)
+            end)
+
+            IMGUI_BTN.MouseButton1Click:Connect(function()
+                if G.showGrantUI then
+                    G.showGrantUI(cat.id, results)
+                else
+                    addLog("INFO","GRANT UI not loaded yet",
+                        "30_grantui.lua must be in loader")
+                end
             end)
 
             AGAIN_BTN.MouseButton1Click:Connect(function()
