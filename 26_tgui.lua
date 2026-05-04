@@ -461,25 +461,32 @@ mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
 
 local TGUI_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,120,1,0),Position=UDim2.new(1,-374,0,0),
+    Size=UDim2.new(1,-190,1,0),Position=UDim2.new(0,190,0,0),
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 
--- Place ID input
+-- control bar below topbar — PlaceId input + action buttons
+local CTRLBAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
+    Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,0,30),ZIndex=4},P_TGUI)
+stroke(C.BORDER,1,CTRLBAR)
+mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},CTRLBAR)
+pad(8,4,CTRLBAR); listH(CTRLBAR,8)
+
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="PlaceId",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,50,1,0),Position=UDim2.new(1,-360,0,0),
-    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
+    Size=UDim2.new(0,50,1,0),TextXAlignment=Enum.TextXAlignment.Left,
+    ZIndex=5,LayoutOrder=1},CTRLBAR)
 local PLACE_BOX=mk("TextBox",{BackgroundColor3=C.CARD,BorderSizePixel=0,
-    Text="",PlaceholderText="target game PlaceId",
+    Text="",PlaceholderText="target PlaceId (blank = dry run)",
     PlaceholderColor3=C.MUTED,TextColor3=C.WHITE,TextSize=10,Font=Enum.Font.Code,
     ClearTextOnFocus=false,TextXAlignment=Enum.TextXAlignment.Left,
-    Size=UDim2.new(0,160,0,22),Position=UDim2.new(1,-302,0.5,-11),ZIndex=6},TOPBAR)
+    Size=UDim2.new(1,-280,0,22),ZIndex=5,LayoutOrder=2},CTRLBAR)
 corner(5,PLACE_BOX); stroke(C.BORDER,1,PLACE_BOX); pad(6,0,PLACE_BOX)
 
 local SEND_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=Color3.fromRGB(80,40,160),BorderSizePixel=0,
     Font=Enum.Font.GothamBold,Text="▶ DELIVER",TextColor3=C.WHITE,TextSize=10,
-    Size=UDim2.new(0,80,0,22),Position=UDim2.new(1,-134,0.5,-11),ZIndex=6},TOPBAR)
+    Size=UDim2.new(0,90,0,22),ZIndex=5,LayoutOrder=3},CTRLBAR)
 corner(5,SEND_BTN)
 do local base=Color3.fromRGB(80,40,160)
     SEND_BTN.MouseEnter:Connect(function() tw(SEND_BTN,TI.fast,{BackgroundColor3=Color3.new(math.min(base.R+.1,1),math.min(base.G+.1,1),math.min(base.B+.1,1))}) end)
@@ -489,14 +496,14 @@ end
 local CHECK_BTN=mk("TextButton",{AutoButtonColor=false,
     BackgroundColor3=C.CARD,BorderSizePixel=0,
     Font=Enum.Font.GothamBold,Text="⟳ Check Arrival",TextColor3=C.TEXT,TextSize=9,
-    Size=UDim2.new(0,96,0,22),Position=UDim2.new(1,-44,0.5,-11),ZIndex=6},TOPBAR)
+    Size=UDim2.new(0,108,0,22),ZIndex=5,LayoutOrder=4},CTRLBAR)
 corner(5,CHECK_BTN); stroke(C.BORDER,1,CHECK_BTN)
 CHECK_BTN.MouseEnter:Connect(function() tw(CHECK_BTN,TI.fast,{BackgroundColor3=C.SURFACE}) end)
 CHECK_BTN.MouseLeave:Connect(function() tw(CHECK_BTN,TI.fast,{BackgroundColor3=C.CARD}) end)
 
 -- body
 local BODY=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-    Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,1,-32),ZIndex=3},P_TGUI)
+    Position=UDim2.new(0,0,0,62),Size=UDim2.new(1,0,1,-62),ZIndex=3},P_TGUI)
 
 -- left: template + editor
 local TL=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,

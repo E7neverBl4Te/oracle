@@ -834,7 +834,7 @@ mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
 
 local function buildIntelSummary()
     for _,c in ipairs(INTEL_CARD:GetChildren()) do
-        if c.LayoutOrder > 1 then c:Destroy() end
+        if c:IsA("GuiObject") and c.LayoutOrder > 1 then c:Destroy() end
     end
     local avdCount=0
     for _,f in ipairs(G.AVD_FINDINGS or {}) do
