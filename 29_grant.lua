@@ -773,7 +773,13 @@ local LEFT=mk("ScrollingFrame",{BackgroundTransparency=1,BorderSizePixel=0,
     CanvasSize=UDim2.fromScale(0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,ZIndex=4},GL)
 pad(10,8,LEFT); listV(LEFT,8)
 
--- Category selector
+-- Description label — declared BEFORE category buttons so click handlers can reference it
+local DESC_LBL=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
+    Text=CATEGORIES[1].desc,TextColor3=C.MUTED,TextSize=9,TextWrapped=true,
+    Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,
+    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=4,LayoutOrder=11},LEFT)
+
+-- Category selector buttons
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="GRANT CATEGORY",TextColor3=C.MUTED,TextSize=9,
     Size=UDim2.new(1,0,0,13),TextXAlignment=Enum.TextXAlignment.Left,
@@ -819,12 +825,6 @@ for i,cat in ipairs(CATEGORIES) do
         DESC_LBL.Text=cat.desc
     end)
 end
-
--- Description
-local DESC_LBL=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
-    Text=CATEGORIES[1].desc,TextColor3=C.MUTED,TextSize=9,TextWrapped=true,
-    Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,
-    TextXAlignment=Enum.TextXAlignment.Left,ZIndex=4,LayoutOrder=11},LEFT)
 
 -- Value input
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
@@ -1040,21 +1040,22 @@ FIRE_BTN.MouseButton1Click:Connect(function()
             local thisResult = result
             local thisPayloadStr = payloadStr2
 
-            -- Disconnect any previous connections before wiring new ones
-            -- (prevents stacking from multiple ATTEMPT GRANT runs)
-            COPY_BTN:ClearAllChildren()  -- no-op but harmless
-            if COPY_BTN._conn  then pcall(function() COPY_BTN._conn:Disconnect()  end) end
-            if IMGUI_BTN._conn then pcall(function() IMGUI_BTN._conn:Disconnect() end) end
-            if AGAIN_BTN._conn then pcall(function() AGAIN_BTN._conn:Disconnect() end) end
+            -- Store connections in a table (Roblox Instances don't support
+            -- arbitrary property assignment like btn._conn)
+            if not G._grantBtnConns then G._grantBtnConns = {} end
+            local conns = G._grantBtnConns
+            if conns.copy  then pcall(function() conns.copy:Disconnect()  end) end
+            if conns.imgui then pcall(function() conns.imgui:Disconnect() end) end
+            if conns.again then pcall(function() conns.again:Disconnect() end) end
 
-            COPY_BTN._conn = COPY_BTN.MouseButton1Click:Connect(function()
+            conns.copy = COPY_BTN.MouseButton1Click:Connect(function()
                 pcall(setclipboard, thisPayloadStr)
                 COPY_BTN.Text="Copied!"; task.delay(1.5,function()
                     if COPY_BTN.Parent then COPY_BTN.Text="Copy Payload" end
                 end)
             end)
 
-            IMGUI_BTN._conn = IMGUI_BTN.MouseButton1Click:Connect(function()
+            conns.imgui = IMGUI_BTN.MouseButton1Click:Connect(function()
                 if G.showGrantUI then
                     local safeResult = {
                         confirmed = thisResult and thisResult.confirmed,
@@ -1083,7 +1084,7 @@ FIRE_BTN.MouseButton1Click:Connect(function()
                 end
             end)
 
-            AGAIN_BTN._conn = AGAIN_BTN.MouseButton1Click:Connect(function()
+            conns.again = AGAIN_BTN.MouseButton1Click:Connect(function()
                 if not thisResult.payload or not thisResult.remote then return end
                 addLogSep("FIRING CONFIRMED GRANT PATH AGAIN")
                 local remote=findR(thisResult.remote)
