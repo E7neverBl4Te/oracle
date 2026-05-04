@@ -423,47 +423,46 @@ mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
 mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
     Text="⬡  NETMAP — NETWORK TOPOLOGY",
     TextColor3=Color3.fromRGB(80,180,255),TextSize=11,
-    Size=UDim2.new(0,280,1,0),Position=UDim2.new(0,14,0,0),
+    Size=UDim2.new(0,260,1,0),Position=UDim2.new(0,14,0,0),
     TextXAlignment=Enum.TextXAlignment.Left,ZIndex=5},TOPBAR)
 local NET_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Text="idle",TextColor3=C.MUTED,TextSize=9,
-    Size=UDim2.new(0,140,1,0),Position=UDim2.new(1,-390,0,0),
+    Size=UDim2.new(1,-274,1,0),Position=UDim2.new(0,274,0,0),
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 
 -- Buttons
-local TICK_BTN=mk("TextButton",{AutoButtonColor=false,
-    BackgroundColor3=Color3.fromRGB(30,60,120),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="⏱ Tick",TextColor3=C.WHITE,TextSize=9,
-    Size=UDim2.new(0,54,0,22),Position=UDim2.new(1,-376,0.5,-11),ZIndex=6},TOPBAR)
-corner(5,TICK_BTN); stroke(Color3.fromRGB(80,140,255),1,TICK_BTN)
+-- button bar below topbar
+local BTNBAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
+    Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,0,30),ZIndex=4},P_NET)
+stroke(C.BORDER,1,BTNBAR)
+mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
+    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},BTNBAR)
+pad(8,4,BTNBAR); listH(BTNBAR,6)
 
-local QUEUE_BTN=mk("TextButton",{AutoButtonColor=false,
-    BackgroundColor3=Color3.fromRGB(30,60,120),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="⬡ Queue",TextColor3=C.WHITE,TextSize=9,
-    Size=UDim2.new(0,62,0,22),Position=UDim2.new(1,-308,0.5,-11),ZIndex=6},TOPBAR)
-corner(5,QUEUE_BTN); stroke(Color3.fromRGB(80,140,255),1,QUEUE_BTN)
+local function mkNBtn(txt,col,dark)
+    local b=mk("TextButton",{AutoButtonColor=false,
+        BackgroundColor3=dark or Color3.fromRGB(30,60,120),BorderSizePixel=0,
+        Font=Enum.Font.GothamBold,Text=txt,TextColor3=C.WHITE,TextSize=9,
+        Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,
+        ZIndex=5},BTNBAR)
+    corner(5,b); stroke(col,1,b)
+    mk("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8)},b)
+    return b
+end
 
-local CORR_BTN=mk("TextButton",{AutoButtonColor=false,
-    BackgroundColor3=Color3.fromRGB(30,60,120),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="⟳ Correlate",TextColor3=C.WHITE,TextSize=9,
-    Size=UDim2.new(0,80,0,22),Position=UDim2.new(1,-234,0.5,-11),ZIndex=6},TOPBAR)
-corner(5,CORR_BTN); stroke(Color3.fromRGB(80,140,255),1,CORR_BTN)
-
-local MON_BTN=mk("TextButton",{AutoButtonColor=false,
-    BackgroundColor3=Color3.fromRGB(20,80,40),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="● Monitor",TextColor3=C.WHITE,TextSize=9,
-    Size=UDim2.new(0,76,0,22),Position=UDim2.new(1,-144,0.5,-11),ZIndex=6},TOPBAR)
-corner(5,MON_BTN); stroke(Color3.fromRGB(80,210,100),1,MON_BTN)
-
-local FULL_BTN=mk("TextButton",{AutoButtonColor=false,
-    BackgroundColor3=Color3.fromRGB(80,140,255),BorderSizePixel=0,
-    Font=Enum.Font.GothamBold,Text="⬡ FULL",TextColor3=Color3.fromRGB(8,8,12),TextSize=10,
-    Size=UDim2.new(0,56,0,22),Position=UDim2.new(1,-68,0.5,-11),ZIndex=6},TOPBAR)
-corner(5,FULL_BTN)
+local TICK_BTN  = mkNBtn("⏱ Tick",     Color3.fromRGB(80,140,255))
+local QUEUE_BTN = mkNBtn("⬡ Queue",    Color3.fromRGB(80,140,255))
+local CORR_BTN  = mkNBtn("⟳ Correlate",Color3.fromRGB(80,140,255))
+local MON_BTN   = mkNBtn("● Monitor",  Color3.fromRGB(80,210,100), Color3.fromRGB(20,80,40))
+local FULL_BTN  = mkNBtn("⬡ FULL",    Color3.fromRGB(80,140,255))
+do
+    tw(FULL_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(80,140,255),
+        TextColor3=Color3.fromRGB(8,8,12)})
+end
 
 -- body
 local BODY=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-    Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,1,-32),ZIndex=3},P_NET)
+    Position=UDim2.new(0,0,0,62),Size=UDim2.new(1,0,1,-62),ZIndex=3},P_NET)
 
 -- left: topology panel
 local NL=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,

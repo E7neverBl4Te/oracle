@@ -678,29 +678,29 @@ local SS_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 
 -- Module buttons
--- button bar below topbar
+-- button bar below topbar — absolute positioned
 local BTNBAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
     Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,0,30),ZIndex=4},P_SS)
 stroke(C.BORDER,1,BTNBAR)
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
-    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},BTNBAR)
-pad(8,4,BTNBAR); listH(BTNBAR,6)
+    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=4},BTNBAR)
 
-local function mkTopBtn(txt,col)
+local function mkTopBtn(txt,col,xPos)
     local b=mk("TextButton",{AutoButtonColor=false,
         BackgroundColor3=col,BorderSizePixel=0,
         Font=Enum.Font.GothamBold,Text=txt,TextColor3=Color3.fromRGB(8,8,12),TextSize=9,
-        Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,ZIndex=5},BTNBAR)
+        Size=UDim2.new(0,0,0,22),AutomaticSize=Enum.AutomaticSize.X,
+        Position=UDim2.new(0,xPos,0.5,-11),ZIndex=5},BTNBAR)
     corner(5,b)
     mk("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8)},b)
     return b
 end
 
-local PATH_BTN  = mkTopBtn("⬡ Paths",     Color3.fromRGB(255,200,60))
-local RACE_BTN  = mkTopBtn("⚡ Race",      Color3.fromRGB(255,140,40))
-local MEM_BTN   = mkTopBtn("⟳ Pressure",  Color3.fromRGB(255,80,80))
-local DS_BTN    = mkTopBtn("⏱ DataStore", Color3.fromRGB(80,210,100))
-local CTX_BTN   = mkTopBtn("⬡ Context",   Color3.fromRGB(168,120,255))
+local PATH_BTN  = mkTopBtn("⬡ Paths",     Color3.fromRGB(255,200,60),  8)
+local RACE_BTN  = mkTopBtn("⚡ Race",      Color3.fromRGB(255,140,40),  96)
+local MEM_BTN   = mkTopBtn("⟳ Pressure",  Color3.fromRGB(255,80,80),   158)
+local DS_BTN    = mkTopBtn("⏱ DataStore", Color3.fromRGB(80,210,100),  254)
+local CTX_BTN   = mkTopBtn("⬡ Context",   Color3.fromRGB(168,120,255), 356)
 
 -- body: left=config, right=log
 local BODY=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,

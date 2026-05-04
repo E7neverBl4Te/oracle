@@ -455,29 +455,29 @@ local REP_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     Size=UDim2.new(0,120,1,0),Position=UDim2.new(1,-380,0,0),
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 
--- button bar below topbar
+-- button bar below topbar — absolute positioned, no UIListLayout
 local BTNBAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
     Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,0,30),ZIndex=4},P_REP)
 stroke(C.BORDER,1,BTNBAR)
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
-    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},BTNBAR)
-pad(8,4,BTNBAR); listH(BTNBAR,6)
+    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=4},BTNBAR)
 
-local function mkRBtn(txt,bg,bord)
+local function mkRBtn(txt,bg,bord,xPos)
     local b=mk("TextButton",{AutoButtonColor=false,
         BackgroundColor3=bg,BorderSizePixel=0,
         Font=Enum.Font.GothamBold,Text=txt,TextColor3=C.WHITE,TextSize=9,
-        Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,ZIndex=5},BTNBAR)
+        Size=UDim2.new(0,0,0,22),AutomaticSize=Enum.AutomaticSize.X,
+        Position=UDim2.new(0,xPos,0.5,-11),ZIndex=5},BTNBAR)
     corner(5,b); stroke(bord or bg,1,b)
     mk("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8)},b)
     return b
 end
 
-local SEAM_BTN = mkRBtn("⚡ Find Seams",Color3.fromRGB(30,90,70),  Color3.fromRGB(80,220,180))
-local OWN_BTN  = mkRBtn("⬡ Ownership", Color3.fromRGB(30,60,90),  Color3.fromRGB(80,140,255))
-local RATE_BTN = mkRBtn("⏱ Rep Rates", Color3.fromRGB(60,40,90),  Color3.fromRGB(168,120,255))
-local FULL_BTN = mkRBtn("⬡ FULL",      Color3.fromRGB(80,220,180),Color3.fromRGB(80,220,180))
-do tw(FULL_BTN,TI.fast,{TextColor3=Color3.fromRGB(8,8,12)}) end
+local SEAM_BTN = mkRBtn("⚡ Find Seams",Color3.fromRGB(30,90,70),   Color3.fromRGB(80,220,180),  8)
+local OWN_BTN  = mkRBtn("⬡ Ownership", Color3.fromRGB(30,60,90),   Color3.fromRGB(80,140,255),  118)
+local RATE_BTN = mkRBtn("⏱ Rep Rates", Color3.fromRGB(60,40,90),   Color3.fromRGB(168,120,255), 212)
+local FULL_BTN = mkRBtn("⬡ FULL",      Color3.fromRGB(80,220,180), Color3.fromRGB(80,220,180),  306)
+FULL_BTN.TextColor3 = Color3.fromRGB(8,8,12)
 
 -- body
 local BODY=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
