@@ -431,34 +431,30 @@ local NET_STATUS=mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
     TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},TOPBAR)
 
 -- Buttons
--- button bar below topbar
+-- button bar below topbar — absolute positioned
 local BTNBAR=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
     Position=UDim2.new(0,0,0,32),Size=UDim2.new(1,0,0,30),ZIndex=4},P_NET)
 stroke(C.BORDER,1,BTNBAR)
 mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
-    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=5},BTNBAR)
-pad(8,4,BTNBAR); listH(BTNBAR,6)
+    Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),ZIndex=4},BTNBAR)
 
-local function mkNBtn(txt,col,dark)
+local function mkNBtn(txt,col,bg,xPos)
     local b=mk("TextButton",{AutoButtonColor=false,
-        BackgroundColor3=dark or Color3.fromRGB(30,60,120),BorderSizePixel=0,
+        BackgroundColor3=bg or Color3.fromRGB(30,60,120),BorderSizePixel=0,
         Font=Enum.Font.GothamBold,Text=txt,TextColor3=C.WHITE,TextSize=9,
-        Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,
-        ZIndex=5},BTNBAR)
+        Size=UDim2.new(0,0,0,22),AutomaticSize=Enum.AutomaticSize.X,
+        Position=UDim2.new(0,xPos,0.5,-11),ZIndex=5},BTNBAR)
     corner(5,b); stroke(col,1,b)
     mk("UIPadding",{PaddingLeft=UDim.new(0,8),PaddingRight=UDim.new(0,8)},b)
     return b
 end
 
-local TICK_BTN  = mkNBtn("⏱ Tick",     Color3.fromRGB(80,140,255))
-local QUEUE_BTN = mkNBtn("⬡ Queue",    Color3.fromRGB(80,140,255))
-local CORR_BTN  = mkNBtn("⟳ Correlate",Color3.fromRGB(80,140,255))
-local MON_BTN   = mkNBtn("● Monitor",  Color3.fromRGB(80,210,100), Color3.fromRGB(20,80,40))
-local FULL_BTN  = mkNBtn("⬡ FULL",    Color3.fromRGB(80,140,255))
-do
-    tw(FULL_BTN,TI.fast,{BackgroundColor3=Color3.fromRGB(80,140,255),
-        TextColor3=Color3.fromRGB(8,8,12)})
-end
+local TICK_BTN  = mkNBtn("⏱ Tick",      Color3.fromRGB(80,140,255), nil,                         8)
+local QUEUE_BTN = mkNBtn("⬡ Queue",     Color3.fromRGB(80,140,255), nil,                         76)
+local CORR_BTN  = mkNBtn("⟳ Correlate", Color3.fromRGB(80,140,255), nil,                         150)
+local MON_BTN   = mkNBtn("● Monitor",   Color3.fromRGB(80,210,100), Color3.fromRGB(20,80,40),    244)
+local FULL_BTN  = mkNBtn("⬡ FULL",     Color3.fromRGB(80,140,255), Color3.fromRGB(80,140,255),  334)
+FULL_BTN.TextColor3 = Color3.fromRGB(8,8,12)
 
 -- body
 local BODY=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,

@@ -572,12 +572,13 @@ local function buildStaticMap()
             currentClass = prop.c
             ord+=1
             local sep=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-                Size=UDim2.new(1,0,0,16),ZIndex=4,LayoutOrder=ord},MAP_SCROLL)
+                Size=UDim2.new(1,0,0,18),ZIndex=4,LayoutOrder=ord},MAP_SCROLL)
             mk("Frame",{BackgroundColor3=C.BORDER,BorderSizePixel=0,
                 Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,0.5,0),ZIndex=4},sep)
-            local bg=mk("Frame",{BackgroundColor3=C.BG,BorderSizePixel=0,
-                Size=UDim2.fromOffset(#prop.c*7+10,12),
-                Position=UDim2.new(0,0,0.5,-6),ZIndex=5},sep)
+            local bgw = math.max(#prop.c*7+10, 50)
+            local bg=mk("Frame",{BackgroundColor3=C.SURFACE,BorderSizePixel=0,
+                Size=UDim2.fromOffset(bgw,13),
+                Position=UDim2.new(0,4,0.5,-6),ZIndex=5},sep)
             mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.GothamBold,
                 Text=prop.c,TextColor3=C.TEXT,TextSize=8,
                 Size=UDim2.fromScale(1,1),TextXAlignment=Enum.TextXAlignment.Center,
@@ -585,32 +586,35 @@ local function buildStaticMap()
         end
 
         ord+=1
-        local col = DIR_COL[prop.dir] or C.MUTED
-        local row=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
-            Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,
-            ZIndex=4,LayoutOrder=ord},MAP_SCROLL)
-        listH(row,4)
+        local col  = DIR_COL[prop.dir] or C.MUTED
+        local H    = 16  -- fixed row height
 
-        -- Direction badge
+        -- Use a plain frame with fixed height, absolute children — no listH
+        local row=mk("Frame",{BackgroundTransparency=1,BorderSizePixel=0,
+            Size=UDim2.new(1,0,0,H),ZIndex=4,LayoutOrder=ord},MAP_SCROLL)
+
+        -- Direction badge — left edge
         local badge=mk("Frame",{BackgroundColor3=col,BorderSizePixel=0,
-            Size=UDim2.new(0,0,0,14),AutomaticSize=Enum.AutomaticSize.X,
-            ZIndex=5},row)
+            Size=UDim2.new(0,0,0,13),AutomaticSize=Enum.AutomaticSize.X,
+            Position=UDim2.new(0,2,0.5,-6),ZIndex=5},row)
         corner(3,badge)
         mk("UIPadding",{PaddingLeft=UDim.new(0,3),PaddingRight=UDim.new(0,3)},badge)
         mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
             Text=prop.dir,TextColor3=Color3.fromRGB(8,8,12),TextSize=7,
             Size=UDim2.new(0,0,1,0),AutomaticSize=Enum.AutomaticSize.X,ZIndex=6},badge)
 
+        -- Property name — after badge (offset ~50px for badge)
         mk("TextLabel",{BackgroundTransparency=1,Font=Enum.Font.Code,
             Text=prop.p,TextColor3=
-                prop.dir==DIR.C2S and Color3.fromRGB(255,120,80) or
+                prop.dir==DIR.C2S     and Color3.fromRGB(255,120,80) or
                 prop.dir==DIR.PHYSICS and Color3.fromRGB(80,220,180) or
                 C.MUTED,
             TextSize=9,
-            Size=UDim2.new(1,-60,1,0),TextXAlignment=Enum.TextXAlignment.Left,
+            Size=UDim2.new(1,-100,1,0),Position=UDim2.new(0,50,0,0),
+            TextXAlignment=Enum.TextXAlignment.Left,
             ZIndex=5},row)
 
-        -- Measurement overlay if available
+        -- Measurement overlay
         local key = prop.c.."."..prop.p
         local meas = MEASUREMENTS[key]
         if meas then
@@ -619,6 +623,7 @@ local function buildStaticMap()
                     (("%.0f"):format(meas.snapBackMs or 0).."ms"),
                 TextColor3=meas.stayed and Color3.fromRGB(255,80,80) or C.MUTED,
                 TextSize=8,Size=UDim2.new(0,40,1,0),
+                Position=UDim2.new(1,-42,0,0),
                 TextXAlignment=Enum.TextXAlignment.Right,ZIndex=5},row)
         end
     end
