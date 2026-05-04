@@ -527,14 +527,13 @@ local function executeGrant(category, targetValue, remoteName, logFn)
         if c.id == category then cat=c; break end
     end
     if not cat then
-        if logFn then logFn("INFO","Unknown category: "..category) end
+        if logFn then logFn("INFO","Unknown category: "..tostring(category)) end
         return nil
     end
 
     -- Find best remotes
     local candidates = findGrantRemotes(cat)
     if remoteName and remoteName ~= "" then
-        -- Specific remote specified — prioritize it
         local r=findR(remoteName)
         if r then
             table.insert(candidates, 1, {
@@ -544,32 +543,72 @@ local function executeGrant(category, targetValue, remoteName, logFn)
         end
     end
 
+    -- ── LAST RESORT: live scan ────────────────────────────────────────────────
+    -- If no intelligence exists yet, scan ReplicatedStorage live right now
+    -- so the user doesn't need to run Discovery first
     if #candidates == 0 then
         if logFn then
-            logFn("INFO","No candidates found",
-                "Run Discovery, AVD, or VEX first to build intelligence")
+            logFn("INFO","No prior intelligence found",
+                "Running live remote scan as fallback...")
+        end
+        local function liveAdd(root)
+            local ok,d=pcall(function() return root:GetDescendants() end)
+            if not ok then return end
+            for _,x in ipairs(d) do
+                if x:IsA("RemoteEvent") or x:IsA("RemoteFunction") then
+                    table.insert(candidates, {
+                        remote = x,
+                        name   = x.Name,
+                        score  = 1,
+                        source = "LiveScan",
+                        reason = x:GetFullName(),
+                    })
+                end
+            end
+        end
+        liveAdd(RepS)
+        liveAdd(workspace)
+        if logFn then
+            logFn("INFO",("Live scan found %d remotes"):format(#candidates),
+                "For better results: run Discovery → AVD → then retry")
+        end
+    end
+
+    if #candidates == 0 then
+        if logFn then
+            logFn("INFO","No remotes accessible",
+                "The game may not have any RemoteEvents in ReplicatedStorage or Workspace")
         end
         return nil
     end
 
     if logFn then
         logFn("INFO",
-            ("Grant: %s — %d candidate remotes"):format(cat.label, #candidates),
-            ("Top: %s [%s]"):format(candidates[1].name, candidates[1].source))
+            ("Targeting %d remote(s)"):format(math.min(#candidates,8)),
+            ("Top: %s [%s] — %s"):format(
+                candidates[1].name,
+                candidates[1].source,
+                candidates[1].reason))
     end
 
     local probes  = cat.payloads(targetValue)
     local results = {}
     local bestResult = nil
 
-    -- Route 1: Remote handler — try top candidates × all probes
+    -- PATH 1: Remote handler
     local maxRemotes = math.min(#candidates, 8)
+    if logFn then
+        logFn("INFO",
+            ("Probing %d remote(s) × %d payload(s)"):format(
+                maxRemotes, math.min(#probes,10)))
+    end
+
     for ri=1,maxRemotes do
         local cand = candidates[ri]
         if logFn then
             logFn("INFO",
-                ("Trying remote %d/%d: %s"):format(ri, maxRemotes, cand.name),
-                "Source: "..cand.source)
+                ("Remote %d/%d: %s"):format(ri, maxRemotes, cand.name),
+                "["..cand.source.."]  "..cand.reason)
         end
 
         -- First try VEX's optimal payload if we have one
