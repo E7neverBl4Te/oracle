@@ -41,8 +41,6 @@ local CATEGORIES = {
         icon  = "⚔",
         col   = Color3.fromRGB(255,80,80),
         desc  = "Physical tools granted to character or backpack",
-        -- How the server typically grants tools
-        -- RemoteEvent fires → server clones tool into Backpack/Character
         payloads = function(name)
             local n = name or "Sword"
             return {
@@ -58,29 +56,52 @@ local CATEGORIES = {
                 {tag="reward",        p={{type="reward",      rewardType="tool", rewardId=n}}},
             }
         end,
-        -- What to watch for as confirmation
-        confirm = function(before, after, deltas)
-            local ch = LP.Character
-            if not ch then return false, nil end
-            -- Check backpack for new tool
+        -- Snapshot backpack BEFORE firing — compare AFTER
+        -- Only returns confirmed if something NEW appeared that wasn't there before
+        snapshotFn = function()
+            local snap2 = {}
             local bp = LP:FindFirstChildOfClass("Backpack")
             if bp then
                 for _,item in ipairs(bp:GetChildren()) do
-                    if item:IsA("Tool") then
-                        return true, "Tool in Backpack: "..item.Name
+                    snap2[item.Name] = true
+                end
+            end
+            local ch = LP.Character
+            if ch then
+                for _,item in ipairs(ch:GetChildren()) do
+                    if item:IsA("Tool") then snap2[item.Name]=true end
+                end
+            end
+            return snap2
+        end,
+        confirm = function(before, after, deltas, beforeSnap)
+            -- beforeSnap is the pre-fire backpack state taken by snapshotFn
+            -- Compare current backpack against it — only NEW items count
+            local bp = LP:FindFirstChildOfClass("Backpack")
+            local newItems = {}
+            if bp then
+                for _,item in ipairs(bp:GetChildren()) do
+                    if item:IsA("Tool") and (not beforeSnap or not beforeSnap[item.Name]) then
+                        table.insert(newItems, item.Name)
                     end
                 end
             end
-            -- Check character
-            for _,item in ipairs(ch:GetChildren()) do
-                if item:IsA("Tool") then
-                    return true, "Tool equipped: "..item.Name
+            local ch = LP.Character
+            if ch then
+                for _,item in ipairs(ch:GetChildren()) do
+                    if item:IsA("Tool") and (not beforeSnap or not beforeSnap[item.Name]) then
+                        table.insert(newItems, item.Name)
+                    end
                 end
             end
-            -- State delta containing tool-like path
-            for _,ch2 in ipairs(deltas) do
-                if ch2.path:lower():find("tool") or ch2.path:lower():find("weapon") then
-                    return true, "Tool state change: "..ch2.path
+            if #newItems > 0 then
+                return true, "Server granted new tool(s): "..table.concat(newItems, ", ")
+            end
+            -- Fallback: state deltas mentioning tool paths
+            for _,ch2 in ipairs(deltas or {}) do
+                local path = (ch2.path or ""):lower()
+                if path:find("tool") or path:find("weapon") or path:find("backpack") then
+                    return true, "Tool state change: "..ch2.path.." → "..ch2.av
                 end
             end
             return false, nil
@@ -614,8 +635,9 @@ local function executeGrant(category, targetValue, remoteName, logFn)
         -- First try VEX's optimal payload if we have one
         if cand.vexPayload then
             task.wait(0.1)
+            local beforeSnap = cat.snapshotFn and cat.snapshotFn() or nil
             local r = fireGrantProbe(cand.remote, cand.vexPayload)
-            local confirmed, evidence = cat.confirm(r.before, r.after, r.deltas)
+            local confirmed, evidence = cat.confirm(r.before, r.after, r.deltas, beforeSnap)
             if confirmed then
                 if logFn then
                     logFn("FINDING",
@@ -629,12 +651,17 @@ local function executeGrant(category, targetValue, remoteName, logFn)
 
         -- Try all category probes
         for _, probe in ipairs(probes) do
-            -- Skip MPS probes here — handled below
             if probe.mps then continue end
 
             task.wait(0.08)
+
+            -- Take category-specific before snapshot (e.g. backpack for tools)
+            local beforeSnap = cat.snapshotFn and cat.snapshotFn() or nil
+
             local r = fireGrantProbe(cand.remote, probe.p)
-            local confirmed, evidence = cat.confirm(r.before, r.after, r.deltas)
+
+            -- Pass beforeSnap as 4th arg to confirm so it can diff properly
+            local confirmed, evidence = cat.confirm(r.before, r.after, r.deltas, beforeSnap)
 
             local probeResult = {
                 tag=probe.tag, remote=cand.name,
@@ -1122,6 +1149,11 @@ P_GNT:GetPropertyChangedSignal("Visible"):Connect(function()
         end
     end
 end)
+
+-- Export for GRANT UI and other modules
+G.GRANT_RESULTS  = GRANT_RESULTS
+G.grant_attempt  = executeGrant
+G.grant_payloads = buildGrantPayloads  -- so 30_grantui can call it
 
 if G.addTab then
     G.addTab("grant","GRANT",P_GNT)

@@ -26,7 +26,7 @@ local TS      = game:GetService("TweenService")
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 -- The IMGUI is a ScreenGui that floats over the game
--- It is separate from Oracle's window so it persists while Oracle is minimised
+-- Try multiple parent strategies for executor compatibility
 local SGUI = Instance.new("ScreenGui")
 SGUI.Name             = "OracleGrantUI"
 SGUI.ResetOnSpawn     = false
@@ -34,13 +34,23 @@ SGUI.IgnoreGuiInset   = true
 SGUI.ZIndexBehavior   = Enum.ZIndexBehavior.Sibling
 SGUI.Enabled          = false
 
--- Try PlayerGui first, fall back to CoreGui
-local ok = pcall(function()
-    SGUI.Parent = LP:WaitForChild("PlayerGui", 5)
-end)
-if not ok then
-    pcall(function() SGUI.Parent = game:GetService("CoreGui") end)
+-- Try PlayerGui → CoreGui → unparented fallback
+local function tryParent()
+    -- Method 1: gethui (some executors provide a protected GUI parent)
+    if gethui then
+        local ok=pcall(function() SGUI.Parent=gethui() end)
+        if ok then return end
+    end
+    -- Method 2: PlayerGui direct
+    local pg=LP:FindFirstChildOfClass("PlayerGui")
+    if pg then
+        local ok=pcall(function() SGUI.Parent=pg end)
+        if ok then return end
+    end
+    -- Method 3: CoreGui
+    pcall(function() SGUI.Parent=game:GetService("CoreGui") end)
 end
+tryParent()
 
 -- ── Palette (matches Oracle but slightly lighter for overlay context) ──────────
 local OC = {
@@ -273,37 +283,359 @@ local function buildToolsPanel(result)
     clearContent()
     TITLE_LBL.Text = "⚔ TOOLS & WEAPONS"
 
-    -- Collect tool names from multiple sources
-    local tools = {}
-    local seen  = {}
-    local function addTool(name, extra)
+    -- ── Only show tools the SERVER confirmed granting ─────────────────────────
+    -- Sources in priority order:
+    -- 1. Items that appeared in Backpack AFTER the confirmed grant fire
+    -- 2. Deltas from the grant probe that reference tool/item paths
+    -- 3. Response data from the server
+    -- DO NOT scan existing Backpack — that is the player's prior inventory
+
+    local serverGranted = {}  -- tools confirmed as server-delivered
+    local seen = {}
+
+    local function addGranted(name, source)
         if not name or name=="" or name=="nil" or seen[name] then return end
-        seen[name]=true
-        table.insert(tools, setmetatable(extra or {}, {__index={name=name}}))
-        tools[#tools].name = name
+        seen[name] = true
+        table.insert(serverGranted, {name=name, source=source})
     end
 
-    -- From confirmed deltas
+    -- Pull from deltas — path changes that reference tool-like values
     for _,delta in ipairs(result.deltas or {}) do
-        if delta.av then addTool(delta.av, {path=delta.path}) end
+        local pathL = (delta.path or ""):lower()
+        local av    = delta.av or ""
+        -- Only include if the delta path suggests something was added/changed
+        -- and the value looks like an item name (not a number or bool)
+        if av ~= "" and av ~= "nil" and av ~= "true" and av ~= "false"
+        and not tonumber(av) then
+            addGranted(av, "ServerDelta:"..delta.path)
+        end
     end
-    -- From GRANT_RESULTS hits
+
+    -- Pull from GRANT_RESULTS confirmed hits
     if G.GRANT_RESULTS then
         for _,gr in ipairs(G.GRANT_RESULTS) do
-            if gr.category=="tools" then
+            if gr.category == "tools" then
                 for _,hit in ipairs(gr.hits or {}) do
-                    -- extract tool names from payload tag
-                    local tag = hit.payload or ""
-                    for word in tostring(tag):gmatch("[A-Z][a-zA-Z]+") do
-                        addTool(word)
+                    -- Only hits where server actually responded
+                    if (hit.deltas or 0) > 0 or (hit.responses or 0) > 0 then
+                        -- Extract item name from the probe tag
+                        local tag = hit.payload or hit.tag or ""
+                        local item = tostring(tag):match("give_(.+)") or
+                                     tostring(tag):match("grant_(.+)") or
+                                     tostring(tag):match("equip_(.+)")
+                        if item then
+                            -- Convert snake_case back to readable
+                            local readable = item:gsub("_"," ")
+                                               :gsub("(%a)([%w_']*)",
+                                                function(a,b) return a:upper()..b end)
+                            addGranted(readable, "GrantHit:"..hit.remote)
+                        end
                     end
+                    -- Also check deltas from hits
                     for _,d in ipairs(hit.deltas or {}) do
-                        if d.av then addTool(d.av,{path=d.path}) end
+                        if d.av and not tonumber(d.av) and d.av~="true" and d.av~="false" then
+                            addGranted(d.av, "HitDelta:"..d.path)
+                        end
+                    end
+                end
+                -- Evidence string — new format: "Server granted new tool(s): ToolName"
+                if gr.bestPath and gr.bestPath.evidence then
+                    local ev = gr.bestPath.evidence or ""
+                    local toolName = ev:match("Server granted new tool%(s%):%s*(.+)")
+                              or ev:match("Tool in Backpack:%s*(.+)")
+                              or ev:match("Tool equipped:%s*(.+)")
+                              or ev:match("Tool state change:%s*([^→]+)")
+                    if toolName then
+                        addGranted(toolName:match("^%s*(.-)%s*$"), "ServerConfirm")
                     end
                 end
             end
         end
     end
+
+    -- If grant path exists but no items detected, show requestable targets
+    local availablePayloads = {}
+    if #serverGranted == 0 then
+        if G.GRANT_RESULTS and G.grant_payloads then
+            for _,gr in ipairs(G.GRANT_RESULTS) do
+                if gr.category == "tools" and gr.bestPath then
+                    local probes = G.grant_payloads("tools", nil)
+                    for _,p in ipairs(probes) do
+                        local item = p.tag:match("give_(.+)") or p.tag:match("grant_(.+)")
+                        if item then
+                            local readable = item:gsub("_"," ")
+                                :gsub("(%a)([%w_']*)",function(a,b) return a:upper()..b end)
+                            table.insert(availablePayloads,{name=readable,tag=p.tag,payload=p.p})
+                        end
+                    end
+                    break
+                end
+            end
+        end
+    end
+
+    -- If still nothing, show a clear message — don't hallucinate items
+    if #serverGranted == 0 and #availablePayloads == 0 then
+        mkLabel("No server-granted items detected yet.", 11, OC.AMBER, CONTENT, 20)
+        mkLabel(
+            "GRANT found a path but the server hasn't\n"..
+            "delivered any items yet.\n\n"..
+            "Press ▶ GRANT below to request items\nfrom the server.\n\n"..
+            "Items that the server grants will\nappear here after confirmation.",
+            9, OC.MUTED, CONTENT, 50)
+
+        -- Still show grant button to attempt delivery
+        local grantBtn=mkGrantBtn("▶ REQUEST TOOL FROM SERVER", OC.GREEN, CONTENT, 200)
+        grantBtn.MouseButton1Click:Connect(function()
+            STATUS_LBL.Text="Requesting from server..."
+            STATUS_LBL.TextColor3=OC.AMBER
+            task.spawn(function()
+                local bestRemote=nil
+                if G.GRANT_RESULTS then
+                    for _,gr in ipairs(G.GRANT_RESULTS) do
+                        if gr.category=="tools" and gr.bestPath then
+                            bestRemote=gr.bestPath.remote; break
+                        end
+                    end
+                end
+                if bestRemote then
+                    local before={}
+                    local bp=LP:FindFirstChildOfClass("Backpack")
+                    if bp then for _,i in ipairs(bp:GetChildren()) do before[i.Name]=true end end
+                    fireGrantPayload(bestRemote,
+                        {action="give",player=LP.Name,userId=LP.UserId,grant=true})
+                    task.wait(1.0)
+                    local appeared={}
+                    if bp then for _,i in ipairs(bp:GetChildren()) do
+                        if not before[i.Name] then table.insert(appeared,i.Name) end
+                    end end
+                    if #appeared>0 then
+                        flashConfirmed("✓ Server granted: "..table.concat(appeared,", "))
+                    else
+                        STATUS_LBL.Text="Fired — no new item detected yet"
+                        STATUS_LBL.TextColor3=OC.MUTED
+                    end
+                else
+                    STATUS_LBL.Text="⚠ No confirmed grant path — run GRANT tab first"
+                    STATUS_LBL.TextColor3=OC.AMBER
+                end
+            end)
+        end)
+        return
+    end
+
+    -- Use confirmed server items OR available payloads for navigation
+    local displayList = #serverGranted > 0 and serverGranted or availablePayloads
+    local isConfirmed = #serverGranted > 0
+    local idx = 1
+    local total = #displayList
+
+    -- Selection card
+    local selCard = mkCard(CONTENT, 10, 90)
+
+    -- Team colour dot
+    local teamDot = Instance.new("Frame")
+    teamDot.BackgroundColor3 = LP.Team and LP.Team.TeamColor.Color or OC.MUTED
+    teamDot.BorderSizePixel=0
+    teamDot.Size=UDim2.fromOffset(10,10)
+    teamDot.Position=UDim2.fromOffset(12,10); teamDot.Parent=selCard
+    local tdc=Instance.new("UICorner"); tdc.CornerRadius=UDim.new(1,0); tdc.Parent=teamDot
+
+    local teamLbl=Instance.new("TextLabel")
+    teamLbl.BackgroundTransparency=1; teamLbl.Font=Enum.Font.Code
+    teamLbl.Text=LP.Team and LP.Team.Name or "Neutral"
+    teamLbl.TextColor3=OC.MUTED; teamLbl.TextSize=8
+    teamLbl.Size=UDim2.fromOffset(90,12); teamLbl.Position=UDim2.fromOffset(26,8)
+    teamLbl.TextXAlignment=Enum.TextXAlignment.Left; teamLbl.Parent=selCard
+
+    -- Source badge
+    local srcBadge=Instance.new("Frame")
+    srcBadge.BackgroundColor3=isConfirmed and OC.GREEN or OC.AMBER
+    srcBadge.BorderSizePixel=0
+    srcBadge.Size=UDim2.fromOffset(0,13); srcBadge.AutomaticSize=Enum.AutomaticSize.X
+    srcBadge.Position=UDim2.new(1,-4,0,8); srcBadge.AnchorPoint=Vector2.new(1,0)
+    srcBadge.Parent=selCard
+    local sbc=Instance.new("UICorner"); sbc.CornerRadius=UDim.new(0,4); sbc.Parent=srcBadge
+    mk2("UIPadding",{PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)},srcBadge)
+    local srcLbl=Instance.new("TextLabel")
+    srcLbl.BackgroundTransparency=1; srcLbl.Font=Enum.Font.GothamBold
+    srcLbl.Text=isConfirmed and "SERVER CONFIRMED" or "AVAILABLE"
+    srcLbl.TextColor3=Color3.fromRGB(8,8,12); srcLbl.TextSize=7
+    srcLbl.Size=UDim2.fromOffset(0,13); srcLbl.AutomaticSize=Enum.AutomaticSize.X
+    srcLbl.Parent=srcBadge
+
+    local toolIcon=Instance.new("TextLabel")
+    toolIcon.BackgroundTransparency=1; toolIcon.Font=Enum.Font.GothamBold
+    toolIcon.Text="⚔"; toolIcon.TextColor3=OC.ACCENT; toolIcon.TextSize=28
+    toolIcon.Size=UDim2.fromOffset(40,40); toolIcon.Position=UDim2.fromOffset(12,28)
+    toolIcon.Parent=selCard
+
+    local toolName=Instance.new("TextLabel")
+    toolName.BackgroundTransparency=1; toolName.Font=Enum.Font.GothamBold
+    toolName.TextColor3=OC.TEXT; toolName.TextSize=15
+    toolName.Size=UDim2.new(1,-90,0,22); toolName.Position=UDim2.fromOffset(56,30)
+    toolName.TextXAlignment=Enum.TextXAlignment.Left; toolName.Parent=selCard
+
+    local sourceLbl=Instance.new("TextLabel")
+    sourceLbl.BackgroundTransparency=1; sourceLbl.Font=Enum.Font.Code
+    sourceLbl.TextColor3=OC.MUTED; sourceLbl.TextSize=8
+    sourceLbl.Size=UDim2.new(1,-56,0,12); sourceLbl.Position=UDim2.fromOffset(56,54)
+    sourceLbl.TextXAlignment=Enum.TextXAlignment.Left; sourceLbl.Parent=selCard
+
+    local counterLbl=Instance.new("TextLabel")
+    counterLbl.BackgroundTransparency=1; counterLbl.Font=Enum.Font.Code
+    counterLbl.TextColor3=OC.MUTED; counterLbl.TextSize=9
+    counterLbl.Size=UDim2.fromOffset(50,14); counterLbl.Position=UDim2.new(0,56,0,68)
+    counterLbl.TextXAlignment=Enum.TextXAlignment.Left; counterLbl.Parent=selCard
+
+    local function updateSel()
+        local entry = displayList[idx]
+        if not entry then return end
+        toolName.Text  = entry.name or "?"
+        sourceLbl.Text = entry.source or ""
+        counterLbl.Text= tostring(idx).." / "..tostring(total)
+        teamDot.BackgroundColor3 = LP.Team and LP.Team.TeamColor.Color or OC.MUTED
+        teamLbl.Text = LP.Team and LP.Team.Name or "Neutral"
+    end
+    updateSel()
+
+    -- Navigation arrows
+    local prevBtn=mkArrowBtn("◀",CONTENT,16,114); local nextBtn=mkArrowBtn("▶",CONTENT,288,114)
+    prevBtn.MouseButton1Click:Connect(function() idx=idx>1 and idx-1 or total; updateSel() end)
+    nextBtn.MouseButton1Click:Connect(function() idx=idx<total and idx+1 or 1; updateSel() end)
+
+    -- Dot indicators
+    local dotRow=Instance.new("Frame")
+    dotRow.BackgroundTransparency=1; dotRow.BorderSizePixel=0
+    dotRow.Size=UDim2.new(1,-120,0,12); dotRow.Position=UDim2.new(0,58,0,118)
+    dotRow.Parent=CONTENT
+    local function rebuildDots()
+        for _,c in ipairs(dotRow:GetChildren()) do c:Destroy() end
+        local ll=Instance.new("UIListLayout")
+        ll.FillDirection=Enum.FillDirection.Horizontal; ll.Padding=UDim.new(0,4)
+        ll.HorizontalAlignment=Enum.HorizontalAlignment.Center
+        ll.VerticalAlignment=Enum.VerticalAlignment.Center; ll.Parent=dotRow
+        for i=1,math.min(total,8) do
+            local dot=Instance.new("Frame"); dot.BorderSizePixel=0; dot.Parent=dotRow
+            dot.Size=UDim2.fromOffset(i==idx and 14 or 6,6)
+            dot.BackgroundColor3=i==idx and OC.ACCENT or OC.BORDER
+            local dc=Instance.new("UICorner"); dc.CornerRadius=UDim.new(1,0); dc.Parent=dot
+        end
+    end
+    rebuildDots()
+    prevBtn.MouseButton1Click:Connect(rebuildDots)
+    nextBtn.MouseButton1Click:Connect(rebuildDots)
+
+    -- Validation status card
+    local valCard=mkCard(CONTENT,142,46)
+    do
+        local pathType="UNCONFIRMED"; local pathCol=OC.AMBER
+        local pathDesc="No server path found — run GRANT tab first"
+        if G.GRANT_RESULTS then
+            for _,gr in ipairs(G.GRANT_RESULTS) do
+                if gr.category=="tools" and gr.bestPath then
+                    pathType="GRANT CONFIRMED — score "..gr.bestPath.score
+                    pathCol=OC.GREEN
+                    pathDesc=gr.bestPath.remote.." via "..gr.bestPath.path
+                    break
+                end
+            end
+        end
+        if G.BOUNDARY_RESULTS then
+            for _,br in ipairs(G.BOUNDARY_RESULTS) do
+                if br.level and br.level.severity<=1 then
+                    pathType="L3 BOUNDARY — server trusts client"
+                    pathCol=OC.GREEN; pathDesc=br.remote; break
+                end
+            end
+        end
+        local dot=Instance.new("Frame"); dot.BackgroundColor3=pathCol
+        dot.BorderSizePixel=0; dot.Size=UDim2.fromOffset(8,8)
+        dot.Position=UDim2.fromOffset(10,10); dot.Parent=valCard
+        local dc=Instance.new("UICorner"); dc.CornerRadius=UDim.new(1,0); dc.Parent=dot
+        local tl=Instance.new("TextLabel")
+        tl.BackgroundTransparency=1; tl.Font=Enum.Font.GothamBold
+        tl.Text=pathType; tl.TextColor3=pathCol; tl.TextSize=9
+        tl.Size=UDim2.new(1,-24,0,13); tl.Position=UDim2.fromOffset(22,5)
+        tl.TextXAlignment=Enum.TextXAlignment.Left; tl.Parent=valCard
+        local dl=Instance.new("TextLabel")
+        dl.BackgroundTransparency=1; dl.Font=Enum.Font.Code
+        dl.Text=pathDesc; dl.TextColor3=OC.MUTED; dl.TextSize=8; dl.TextWrapped=true
+        dl.Size=UDim2.new(1,-12,0,18); dl.Position=UDim2.fromOffset(6,22)
+        dl.TextXAlignment=Enum.TextXAlignment.Left; dl.Parent=valCard
+    end
+
+    -- GRANT button — fires to server only, watches for NEW items
+    local grantBtn=mkGrantBtn(
+        isConfirmed and "▶ RE-GRANT FROM SERVER" or "▶ REQUEST FROM SERVER",
+        OC.GREEN, CONTENT, 200)
+    grantBtn.MouseButton1Click:Connect(function()
+        local entry=displayList[idx]
+        if not entry then return end
+
+        local bestRemote=nil
+        if G.GRANT_RESULTS then
+            for _,gr in ipairs(G.GRANT_RESULTS) do
+                if gr.category=="tools" and gr.bestPath then
+                    bestRemote=gr.bestPath.remote; break
+                end
+            end
+        end
+        if not bestRemote then
+            STATUS_LBL.Text="⚠ No server grant path — run GRANT tab first"
+            STATUS_LBL.TextColor3=OC.AMBER; return
+        end
+
+        STATUS_LBL.Text="Requesting from server: "..entry.name
+        STATUS_LBL.TextColor3=OC.AMBER
+
+        task.spawn(function()
+            -- Snapshot BEFORE — so we can detect what the server adds
+            local before={}
+            local bp=LP:FindFirstChildOfClass("Backpack")
+            if bp then for _,i in ipairs(bp:GetChildren()) do before[i.Name]=true end end
+            local ch=LP.Character
+            if ch then for _,i in ipairs(ch:GetChildren()) do
+                if i:IsA("Tool") then before[i.Name]=true end
+            end end
+
+            -- Fire to server with the item name
+            local payload={
+                action="give", item=entry.name,
+                player=LP.Name, userId=LP.UserId,
+                tool=entry.name, grant=true,
+            }
+            -- Also try the original confirmed payload if available
+            if entry.payload then payload=entry.payload end
+
+            fireGrantPayload(bestRemote, payload)
+
+            -- Wait for server replication
+            task.wait(1.0)
+
+            -- Detect what the server actually added
+            local appeared={}
+            if bp then for _,i in ipairs(bp:GetChildren()) do
+                if not before[i.Name] then table.insert(appeared,i.Name) end
+            end end
+            if ch then for _,i in ipairs(ch:GetChildren()) do
+                if i:IsA("Tool") and not before[i.Name] then
+                    table.insert(appeared,i.Name) end
+            end end
+
+            if #appeared>0 then
+                flashConfirmed("✓ SERVER GRANTED: "..table.concat(appeared,", "))
+                -- Add newly server-granted items to our confirmed list
+                for _,name in ipairs(appeared) do
+                    addGranted(name,"ServerDelivered")
+                end
+            else
+                STATUS_LBL.Text="Fired — server may still be processing"
+                STATUS_LBL.TextColor3=OC.MUTED
+            end
+        end)
+    end)
+end
     -- From character backpack
     local bp=LP:FindFirstChildOfClass("Backpack")
     if bp then
