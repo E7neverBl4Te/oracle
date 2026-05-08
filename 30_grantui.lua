@@ -874,7 +874,7 @@ end
 -- ── CURRENCY / ECONOMY ─────────────────────────────────────────────────────────
 local function buildCurrencyPanel(result)
     clearContent()
-    TITLE_LBL.Text = "💰 CURRENCY & ECONOMY"
+    TITLE_LBL.Text = "$ CURRENCY & ECONOMY"
 
     -- Collect currency names from deltas + leaderstats + GRANT hits
     local currencies = {}
@@ -926,7 +926,7 @@ local function buildCurrencyPanel(result)
     local selCard=mkCard(CONTENT,10,70)
     local currIcon=Instance.new("TextLabel")
     currIcon.BackgroundTransparency=1; currIcon.Font=Enum.Font.GothamBold
-    currIcon.Text="💰"; currIcon.TextColor3=OC.AMBER; currIcon.TextSize=26
+    currIcon.Text="$"; currIcon.TextColor3=OC.AMBER; currIcon.TextSize=26
     currIcon.Size=UDim2.fromOffset(36,36); currIcon.Position=UDim2.fromOffset(12,18)
     currIcon.Parent=selCard
 
@@ -1061,7 +1061,7 @@ end
 -- ── ITEMS & INVENTORY ──────────────────────────────────────────────────────────
 local function buildItemsPanel(result)
     clearContent()
-    TITLE_LBL.Text = "📦 ITEMS & INVENTORY"
+    TITLE_LBL.Text = "[I] ITEMS & INVENTORY"
 
     local items={}
     local seenI={}
@@ -1094,7 +1094,7 @@ local function buildItemsPanel(result)
 
     local itemIcon=Instance.new("TextLabel")
     itemIcon.BackgroundTransparency=1; itemIcon.Font=Enum.Font.GothamBold
-    itemIcon.Text="📦"; itemIcon.TextColor3=OC.GREEN; itemIcon.TextSize=28
+    itemIcon.Text="[I]"; itemIcon.TextColor3=OC.GREEN; itemIcon.TextSize=28
     itemIcon.Size=UDim2.fromOffset(40,40); itemIcon.Position=UDim2.fromOffset(12,20)
     itemIcon.Parent=selCard
 
@@ -1197,7 +1197,7 @@ end
 -- ── GUI UNLOCK ─────────────────────────────────────────────────────────────────
 local function buildGuiPanel(result)
     clearContent()
-    TITLE_LBL.Text = "🖥 GUI & UI UNLOCK"
+    TITLE_LBL.Text = "[G] GUI & UI UNLOCK"
 
     -- Collect GUIs from deltas + PlayerGui scan
     local foundGuis={}

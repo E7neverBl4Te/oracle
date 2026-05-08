@@ -111,7 +111,7 @@ local CATEGORIES = {
     {
         id    = "currency",
         label = "Currency & Economy",
-        icon  = "💰",
+        icon  = "$",
         col   = Color3.fromRGB(255,200,60),
         desc  = "Coins, cash, gems, tokens — any numeric economy value",
         payloads = function(amount)
@@ -155,7 +155,7 @@ local CATEGORIES = {
     {
         id    = "items",
         label = "Items & Inventory",
-        icon  = "📦",
+        icon  = "[I]",
         col   = Color3.fromRGB(80,210,100),
         desc  = "Inventory items, collectibles, crafting materials",
         payloads = function(name)
@@ -190,7 +190,7 @@ local CATEGORIES = {
     {
         id    = "permissions",
         label = "Permissions & Roles",
-        icon  = "🔑",
+        icon  = "[K]",
         col   = Color3.fromRGB(255,80,80),
         desc  = "Admin, VIP, moderator, developer — authority escalation",
         payloads = function(role)
@@ -235,7 +235,7 @@ local CATEGORIES = {
     {
         id    = "gui",
         label = "GUI & UI Unlock",
-        icon  = "🖥",
+        icon  = "[G]",
         col   = Color3.fromRGB(80,140,255),
         desc  = "Unlocks hidden GUIs, menus, developer panels",
         payloads = function(name)
@@ -273,7 +273,7 @@ local CATEGORIES = {
     {
         id    = "gamepass",
         label = "GamePass Features",
-        icon  = "🎟",
+        icon  = "[P]",
         col   = Color3.fromRGB(168,120,255),
         desc  = "Unlocks gamepass-gated features without purchase",
         payloads = function(passId)
@@ -307,7 +307,7 @@ local CATEGORIES = {
     {
         id    = "xp",
         label = "XP & Progression",
-        icon  = "⭐",
+        icon  = "*",
         col   = Color3.fromRGB(255,160,40),
         desc  = "Experience, levels, prestige, rank progression",
         payloads = function(amount)
@@ -346,7 +346,7 @@ local CATEGORIES = {
     {
         id    = "access",
         label = "Area & Content Access",
-        icon  = "🚪",
+        icon  = "[A]",
         col   = Color3.fromRGB(80,220,180),
         desc  = "VIP areas, locked zones, restricted content, fast travel",
         payloads = function(zone)
