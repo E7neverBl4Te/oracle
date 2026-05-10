@@ -51,14 +51,30 @@ local CHUNKS = {
     "27_repmap.lua",
     "28_sside.lua",
     "29_grant.lua",
-    "30_grantui.lua",
+    "30a_grantui.lua",
+    "30b_grantui.lua",
 }
 
 for _, name in ipairs(CHUNKS) do
     local ok, err = pcall(function()
-        local src    = httpGet(BASE .. name)
+        local src = httpGet(BASE .. name)
+
+        -- Diagnose bad fetches before trying loadstring
+        if not src or #src < 10 then
+            error("Empty response fetching " .. name)
+        end
+        -- If GitHub returned an HTML error page instead of Lua code
+        if src:sub(1,1) == "<" or src:find("404: Not Found") then
+            error("HTTP error fetching " .. name .. " (got HTML/404)")
+        end
+
         local fn, pe = loadstring(src)
-        assert(fn, "Parse error in " .. name .. ": " .. tostring(pe))
+        if not fn then
+            -- Show first 80 chars of src to help diagnose if it's bad content
+            local preview = src:sub(1,80):gsub("\n"," ")
+            error("Compile failed in " .. name .. ": " .. tostring(pe) ..
+                "\n  [src preview: " .. preview .. "]")
+        end
         fn(G)
     end)
     if not ok then
