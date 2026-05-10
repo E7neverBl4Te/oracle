@@ -55,6 +55,7 @@ local CHUNKS = {
     "30b_grantui.lua",
     "31_dschan.lua",
     "32_msgbus.lua",
+    "33_modcache.lua",
 }
 
 for _, name in ipairs(CHUNKS) do
