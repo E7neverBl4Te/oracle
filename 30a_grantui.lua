@@ -635,37 +635,6 @@ local function buildToolsPanel(result)
             end
         end)
     end)
-end
-    -- From character backpack
-    local bp=LP:FindFirstChildOfClass("Backpack")
-    if bp then
-        for _,item in ipairs(bp:GetChildren()) do
-            if item:IsA("Tool") then
-                local found=false
-                for _,t in ipairs(tools) do if t.name==item.Name then found=true;break end end
-                if not found then table.insert(tools,{name=item.Name,instance=item}) end
-            end
-        end
-    end
-    -- From grant payloads in GRANT_RESULTS
-    if G.GRANT_RESULTS then
-        for _,gr in ipairs(G.GRANT_RESULTS) do
-            if gr.category=="tools" and gr.bestPath then
-                local payStr=gr.bestPath.payload or ""
-                for word in tostring(payStr):gmatch("[A-Z][a-zA-Z]+") do
-                    local found=false
-                    for _,t in ipairs(tools) do if t.name==word then found=true;break end end
-                    if not found and #word>2 then table.insert(tools,{name=word}) end
-                end
-            end
-        end
-    end
-    -- Fallback
-    if #tools==0 then
-        for _,v in ipairs({"Sword","Gun","Bow","Staff","Shield"}) do
-            table.insert(tools,{name=v})
-        end
-    end
 
     local idx = 1
     local total = #tools
