@@ -58,6 +58,7 @@ local CHUNKS = {
     "33_modcache.lua",
     "34_reqcanary.lua",
     "35_scripttoggle.lua",
+    "36_bindreach.lua",
 }
 
 for _, name in ipairs(CHUNKS) do
