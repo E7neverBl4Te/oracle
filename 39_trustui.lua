@@ -14,11 +14,13 @@ local listV  = G.listV
 local listH  = G.listH
 local mkRow  = G.mkRow
 local mkSep  = G.mkSep
+local CON    = G.CON
 local vs     = G.vs
 
 -- Engine refs (38_trust.lua)
-local trust_scan   = G.trust_scan
-local trust_abort  = G.trust_abort
+local trust_scan      = G.trust_scan
+local trust_abort     = G.trust_abort
+local trust_getFindings = G.trust_getFindings
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- COLOURS
@@ -30,29 +32,39 @@ local SEV_COL = {
     MEDIUM   = Color3.fromRGB(255, 210, 50),
     LOW      = Color3.fromRGB(120, 200, 120),
 }
-local CONFIRMED_COL = Color3.fromRGB(255, 70,  70)
-local PROBABLE_COL  = Color3.fromRGB(200, 120, 60)
-local PROG_COL      = Color3.fromRGB(100, 120, 220)
-local CLEAN_COL     = Color3.fromRGB(80,  180, 120)
+local CONF_COL  = Color3.fromRGB(255, 70,  70)
+local PROB_COL  = Color3.fromRGB(200, 120, 60)
+local PROG_COL  = Color3.fromRGB(100, 120, 220)
+local CLEAN_COL = Color3.fromRGB(80,  180, 120)
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- ROOT PANEL
+-- ROOT PANEL — parented to CON, transparent, full scale
+-- Matches Oracle's existing tab panel pattern exactly
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 local P = mk("Frame", {
-    Size             = UDim2.new(1, 0, 1, 0),
-    BackgroundColor3 = C.BG,
-    BorderSizePixel  = 0,
-})
-listV(P, 0)
+    BackgroundTransparency = 1,
+    BorderSizePixel        = 0,
+    Size                   = UDim2.fromScale(1, 1),
+    Visible                = false,
+    ZIndex                 = 3,
+}, CON)
+
+-- Layout constants — absolute positioning to match Oracle's pattern
+local HDR_H  = 36
+local PROG_H = 4
+local CTRL_H = 34
+local TOP_H  = HDR_H + PROG_H + CTRL_H   -- 74px total top chrome
+local PAD    = 6
 
 -- ── Header ────────────────────────────────────────────────────────────────────
 
 local HDR = mk("Frame", {
-    Size             = UDim2.new(1, 0, 0, 36),
+    Size             = UDim2.new(1, 0, 0, HDR_H),
+    Position         = UDim2.new(0, 0, 0, 0),
     BackgroundColor3 = C.SURFACE,
     BorderSizePixel  = 0,
-    LayoutOrder      = 1,
+    ZIndex           = 4,
 }, P)
 corner(6, HDR)
 stroke(C.BORDER, 1, HDR)
@@ -67,17 +79,19 @@ mk("TextLabel", {
     Font                   = Enum.Font.GothamBold,
     TextSize               = 13,
     TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 4,
     LayoutOrder            = 1,
 }, HDR)
 
 mk("TextLabel", {
-    Size                   = UDim2.new(1, -280, 1, 0),
+    Size                   = UDim2.new(1, -290, 1, 0),
     BackgroundTransparency = 1,
     Text                   = "Numeric Argument Trust Auditor",
     TextColor3             = C.MUTED,
     Font                   = Enum.Font.Gotham,
     TextSize               = 11,
     TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 4,
     LayoutOrder            = 2,
 }, HDR)
 
@@ -89,16 +103,18 @@ local STATUS = mk("TextLabel", {
     Font                   = Enum.Font.GothamMedium,
     TextSize               = 11,
     TextXAlignment         = Enum.TextXAlignment.Right,
+    ZIndex                 = 4,
     LayoutOrder            = 3,
 }, HDR)
 
 -- ── Progress bar ──────────────────────────────────────────────────────────────
 
 local PROG_TRACK = mk("Frame", {
-    Size             = UDim2.new(1, 0, 0, 3),
+    Size             = UDim2.new(1, 0, 0, PROG_H),
+    Position         = UDim2.new(0, 0, 0, HDR_H),
     BackgroundColor3 = C.BORDER,
     BorderSizePixel  = 0,
-    LayoutOrder      = 2,
+    ZIndex           = 4,
 }, P)
 corner(1, PROG_TRACK)
 
@@ -106,22 +122,25 @@ local PROG_BAR = mk("Frame", {
     Size             = UDim2.new(0, 0, 1, 0),
     BackgroundColor3 = PROG_COL,
     BorderSizePixel  = 0,
+    ZIndex           = 4,
 }, PROG_TRACK)
 corner(1, PROG_BAR)
 
 -- ── Controls ──────────────────────────────────────────────────────────────────
 
 local CTRL = mk("Frame", {
-    Size            = UDim2.new(1, 0, 0, 32),
+    Size                   = UDim2.new(1, 0, 0, CTRL_H),
+    Position               = UDim2.new(0, 0, 0, HDR_H + PROG_H),
     BackgroundTransparency = 1,
-    LayoutOrder     = 3,
+    BorderSizePixel        = 0,
+    ZIndex                 = 4,
 }, P)
-pad(8, 0, CTRL)
+pad(8, 4, CTRL)
 listH(CTRL, 6)
 
 local function mkBtn(label, bg, lo)
     local b = mk("TextButton", {
-        Size             = UDim2.new(0, 110, 1, -4),
+        Size             = UDim2.new(0, 110, 1, 0),
         BackgroundColor3 = bg,
         BorderSizePixel  = 0,
         Text             = label,
@@ -129,15 +148,16 @@ local function mkBtn(label, bg, lo)
         Font             = Enum.Font.GothamBold,
         TextSize         = 11,
         AutoButtonColor  = false,
+        ZIndex           = 4,
         LayoutOrder      = lo,
     }, CTRL)
     corner(5, b)
     return b
 end
 
-local QUICK_BTN = mkBtn("Quick Scan",  Color3.fromRGB(60, 100, 200), 1)
-local FULL_BTN  = mkBtn("Full Audit",  Color3.fromRGB(80,  60, 160), 2)
-local ABORT_BTN = mkBtn("Abort",       Color3.fromRGB(100, 30,  30), 3)
+local QUICK_BTN = mkBtn("Quick Scan", Color3.fromRGB(60, 100, 200), 1)
+local FULL_BTN  = mkBtn("Full Audit", Color3.fromRGB(80,  60, 160), 2)
+local ABORT_BTN = mkBtn("Abort",      Color3.fromRGB(100, 30,  30), 3)
 
 local FIND_COUNT = mk("TextLabel", {
     Size                   = UDim2.new(1, -360, 1, 0),
@@ -147,24 +167,29 @@ local FIND_COUNT = mk("TextLabel", {
     Font                   = Enum.Font.GothamMedium,
     TextSize               = 11,
     TextXAlignment         = Enum.TextXAlignment.Right,
+    ZIndex                 = 4,
     LayoutOrder            = 4,
 }, CTRL)
 
--- ── Body: findings left (55%) · log right (45%) ───────────────────────────────
+-- ── Body ──────────────────────────────────────────────────────────────────────
+-- Findings left (55%) · Log right (45%)
+-- Fills from TOP_H to bottom with PAD margin
 
 local BODY = mk("Frame", {
-    Size            = UDim2.new(1, 0, 1, -80),
+    Size                   = UDim2.new(1, -PAD*2, 1, -(TOP_H + PAD)),
+    Position               = UDim2.new(0, PAD, 0, TOP_H),
     BackgroundTransparency = 1,
-    LayoutOrder     = 4,
+    BorderSizePixel        = 0,
+    ZIndex                 = 3,
 }, P)
-pad(6, 0, BODY)
-listH(BODY, 6)
+listH(BODY, PAD)
 
--- Findings panel
+-- Findings panel (left, 55%)
 local FP = mk("Frame", {
-    Size             = UDim2.new(0.55, -3, 1, 0),
+    Size             = UDim2.new(0.55, -PAD/2, 1, 0),
     BackgroundColor3 = C.SURFACE,
     BorderSizePixel  = 0,
+    ZIndex           = 4,
     LayoutOrder      = 1,
 }, BODY)
 corner(6, FP)
@@ -178,7 +203,7 @@ mk("TextLabel", {
     Font                   = Enum.Font.GothamBold,
     TextSize               = 10,
     TextXAlignment         = Enum.TextXAlignment.Left,
-    LayoutOrder            = 1,
+    ZIndex                 = 4,
 }, FP)
 
 local FIND_SCROLL = mk("ScrollingFrame", {
@@ -190,7 +215,7 @@ local FIND_SCROLL = mk("ScrollingFrame", {
     ScrollBarImageColor3 = C.BORDER,
     CanvasSize           = UDim2.new(0, 0, 0, 0),
     AutomaticCanvasSize  = Enum.AutomaticSize.Y,
-    LayoutOrder          = 2,
+    ZIndex               = 4,
 }, FP)
 pad(6, 4, FIND_SCROLL)
 listV(FIND_SCROLL, 6)
@@ -198,17 +223,19 @@ listV(FIND_SCROLL, 6)
 local FIND_EMPTY = mk("TextLabel", {
     Size                   = UDim2.new(1, 0, 0, 40),
     BackgroundTransparency = 1,
-    Text                   = "No findings yet — run a scan",
+    Text                   = "No findings — run a scan",
     TextColor3             = C.MUTED,
     Font                   = Enum.Font.Gotham,
     TextSize               = 11,
+    ZIndex                 = 4,
 }, FIND_SCROLL)
 
--- Log panel
+-- Log panel (right, 45%)
 local LP_FRAME = mk("Frame", {
-    Size             = UDim2.new(0.45, -3, 1, 0),
+    Size             = UDim2.new(0.45, -PAD/2, 1, 0),
     BackgroundColor3 = C.SURFACE,
     BorderSizePixel  = 0,
+    ZIndex           = 4,
     LayoutOrder      = 2,
 }, BODY)
 corner(6, LP_FRAME)
@@ -222,6 +249,7 @@ mk("TextLabel", {
     Font                   = Enum.Font.GothamBold,
     TextSize               = 10,
     TextXAlignment         = Enum.TextXAlignment.Left,
+    ZIndex                 = 4,
 }, LP_FRAME)
 
 local LOG_SCROLL = mk("ScrollingFrame", {
@@ -233,12 +261,13 @@ local LOG_SCROLL = mk("ScrollingFrame", {
     ScrollBarImageColor3 = C.BORDER,
     CanvasSize           = UDim2.new(0, 0, 0, 0),
     AutomaticCanvasSize  = Enum.AutomaticSize.Y,
+    ZIndex               = 4,
 }, LP_FRAME)
 pad(4, 3, LOG_SCROLL)
 listV(LOG_SCROLL, 2)
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- LOG HELPERS — uses Oracle's own mkRow/mkSep routed to our scroll frame
+-- LOG — routes through Oracle's mkRow/mkSep into our scroll frame
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 local logN = 0
@@ -252,9 +281,9 @@ local function clearLog()
     logN = 0
 end
 
-local function addLog(level, title, detail, highlight)
+local function addLog(level, title, detail, hi)
     logN = logN + 1
-    mkRow(level, title, detail or "", highlight, LOG_SCROLL, logN)
+    mkRow(level, title or "", detail or "", hi, LOG_SCROLL, logN)
     task.defer(function()
         LOG_SCROLL.CanvasPosition =
             Vector2.new(0, LOG_SCROLL.AbsoluteCanvasSize.Y)
@@ -270,7 +299,7 @@ end
 -- FINDING CARDS
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-local findCount = 0
+local findN = 0
 
 local function clearFindings()
     for _, c in ipairs(FIND_SCROLL:GetChildren()) do
@@ -279,35 +308,36 @@ local function clearFindings()
         end
     end
     FIND_EMPTY.Parent = FIND_SCROLL
-    findCount = 0
+    findN = 0
 end
 
 local function addFindingCard(f)
     FIND_EMPTY.Parent = nil
-    findCount = findCount + 1
+    findN = findN + 1
 
     local sevCol  = SEV_COL[f.severity] or C.MUTED
-    local confCol = f.confirmed and CONFIRMED_COL or PROBABLE_COL
+    local confCol = f.confirmed and CONF_COL or PROB_COL
     local confTxt = f.confirmed and "CONFIRMED" or "PROBABLE"
 
-    -- Card
     local card = mk("Frame", {
         Size             = UDim2.new(1, 0, 0, 0),
         AutomaticSize    = Enum.AutomaticSize.Y,
         BackgroundColor3 = C.CARD,
         BorderSizePixel  = 0,
-        LayoutOrder      = findCount,
+        ZIndex           = 5,
+        LayoutOrder      = findN,
     }, FIND_SCROLL)
     corner(5, card)
     stroke(sevCol, 1, card)
     pad(8, 6, card)
     listV(card, 5)
 
-    -- Top row: severity · remote name · confirmed badge
+    -- Top: severity · remote · confirmed
     local top = mk("Frame", {
-        Size            = UDim2.new(1, 0, 0, 18),
+        Size                   = UDim2.new(1, 0, 0, 18),
         BackgroundTransparency = 1,
-        LayoutOrder     = 1,
+        ZIndex                 = 5,
+        LayoutOrder            = 1,
     }, card)
     listH(top, 6)
 
@@ -318,6 +348,7 @@ local function addFindingCard(f)
         TextColor3       = C.WHITE,
         Font             = Enum.Font.GothamBold,
         TextSize         = 9,
+        ZIndex           = 5,
         LayoutOrder      = 1,
     }, top)
     corner(3, sb)
@@ -325,11 +356,12 @@ local function addFindingCard(f)
     mk("TextLabel", {
         Size                   = UDim2.new(1, -150, 1, 0),
         BackgroundTransparency = 1,
-        Text                   = f.remote,
+        Text                   = f.remote or "?",
         TextColor3             = C.TEXT,
         Font                   = Enum.Font.GothamBold,
         TextSize               = 11,
         TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 5,
         LayoutOrder            = 2,
     }, top)
 
@@ -340,11 +372,12 @@ local function addFindingCard(f)
         TextColor3       = C.WHITE,
         Font             = Enum.Font.GothamBold,
         TextSize         = 9,
+        ZIndex           = 5,
         LayoutOrder      = 3,
     }, top)
     corner(3, cb)
 
-    -- Class label
+    -- Vulnerability class
     mk("TextLabel", {
         Size                   = UDim2.new(1, 0, 0, 13),
         BackgroundTransparency = 1,
@@ -353,14 +386,15 @@ local function addFindingCard(f)
         Font                   = Enum.Font.GothamMedium,
         TextSize               = 10,
         TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 5,
         LayoutOrder            = 2,
     }, card)
 
-    -- Evidence line
+    -- Evidence
     local evText = ""
     if f.family == "NUMERIC" and f.evidence and f.evidence[1] then
         local e = f.evidence[1]
-        evText = ("wrapper:%s  arg(1)→Δ%d  arg(10)→Δ%d  ratio:%.2fx"):format(
+        evText = ("wrapper:%s  arg1→Δ%d  arg10→Δ%d  ratio:%.2fx"):format(
             f.wrapper or "?",
             math.floor(e.delta1  or 0),
             math.floor(e.delta10 or 0),
@@ -368,16 +402,12 @@ local function addFindingCard(f)
     elseif f.family == "PRICE" and f.evidence and f.evidence[1] then
         local e = f.evidence[1]
         evText = ("wrapper:%s  price=0 accepted  Δ%s on [%s]"):format(
-            f.wrapper or "?",
-            tostring(e.delta_zero or "?"),
-            e.path or "?")
+            f.wrapper or "?", tostring(e.delta_zero or "?"), e.path or "?")
     elseif f.family == "PERMISSION" and f.evidence and f.evidence[1] then
         local e = f.evidence[1]
         evText = ("wrapper:%s  value=%s  %d change(s) vs baseline %d"):format(
-            f.wrapper or "?",
-            tostring(e.value or "?"),
-            e.changes  or 0,
-            e.baseline or 0)
+            f.wrapper or "?", tostring(e.value or "?"),
+            e.changes or 0, e.baseline or 0)
     end
 
     mk("TextLabel", {
@@ -390,6 +420,7 @@ local function addFindingCard(f)
         TextSize               = 9,
         TextXAlignment         = Enum.TextXAlignment.Left,
         TextWrapped            = true,
+        ZIndex                 = 5,
         LayoutOrder            = 3,
     }, card)
 
@@ -398,10 +429,11 @@ local function addFindingCard(f)
         Size             = UDim2.new(1, 0, 0, 1),
         BackgroundColor3 = C.BORDER,
         BorderSizePixel  = 0,
+        ZIndex           = 5,
         LayoutOrder      = 4,
     }, card)
 
-    -- Issue description
+    -- Issue
     mk("TextLabel", {
         Size                   = UDim2.new(1, 0, 0, 0),
         AutomaticSize          = Enum.AutomaticSize.Y,
@@ -412,10 +444,11 @@ local function addFindingCard(f)
         TextSize               = 9,
         TextXAlignment         = Enum.TextXAlignment.Left,
         TextWrapped            = true,
+        ZIndex                 = 5,
         LayoutOrder            = 5,
     }, card)
 
-    -- Fix (green — the developer action item)
+    -- Fix
     mk("TextLabel", {
         Size                   = UDim2.new(1, 0, 0, 0),
         AutomaticSize          = Enum.AutomaticSize.Y,
@@ -426,6 +459,7 @@ local function addFindingCard(f)
         TextSize               = 9,
         TextXAlignment         = Enum.TextXAlignment.Left,
         TextWrapped            = true,
+        ZIndex                 = 5,
         LayoutOrder            = 6,
     }, card)
 end
@@ -476,15 +510,14 @@ local function runTrust(options, label)
     task.spawn(function()
         local lastCount = 0
 
-        local function logFn(level, title, detail, highlight)
-            addLog(level, title, detail, highlight)
-            -- stream findings as they arrive
-            local findings = G.trust_getFindings()
+        local function logFn(level, title, detail, hi)
+            addLog(level, title, detail, hi)
+            local findings = trust_getFindings()
             if #findings > lastCount then
                 for i = lastCount + 1, #findings do
                     addFindingCard(findings[i])
-                    FIND_COUNT.Text       = findCount .. " finding(s)"
-                    FIND_COUNT.TextColor3 = CONFIRMED_COL
+                    FIND_COUNT.Text       = findN .. " finding(s)"
+                    FIND_COUNT.TextColor3 = CONF_COL
                 end
                 lastCount = #findings
             end
@@ -492,7 +525,6 @@ local function runTrust(options, label)
 
         local results = trust_scan(options, logFn, onProgress)
 
-        -- catch any final findings not yet rendered
         for i = lastCount + 1, #results do
             addFindingCard(results[i])
         end
@@ -510,18 +542,18 @@ local function runTrust(options, label)
         if #results == 0 then
             addLog("CLEAN",
                 "No trust vulnerabilities found",
-                "Probed remotes appear to validate or ignore client-provided values")
+                "Probed remotes validate or ignore client-provided values")
             setRunning(false, "clean", CLEAN_COL)
         else
             setRunning(false,
                 ("%d finding(s)"):format(#results),
-                confirmed > 0 and CONFIRMED_COL or PROBABLE_COL)
+                confirmed > 0 and CONF_COL or PROB_COL)
         end
     end)
 end
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- BUTTON HANDLERS
+-- BUTTONS
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 QUICK_BTN.MouseButton1Click:Connect(function()
@@ -538,7 +570,7 @@ ABORT_BTN.MouseButton1Click:Connect(function()
     if not running then return end
     trust_abort()
     setRunning(false, "aborted", C.MUTED)
-    addLog("INFO", "Scan aborted by user")
+    addLog("INFO", "Scan aborted by user", "")
     tw(PROG_BAR, TI.fast, {Size = UDim2.new(0, 0, 1, 0)})
 end)
 
