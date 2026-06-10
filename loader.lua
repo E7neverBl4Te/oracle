@@ -60,6 +60,8 @@ local CHUNKS = {
     "35_scripttoggle.lua",
     "36_bindreach.lua",
     "37_impact.lua",
+    "38_trust.lua",
+    "39_trustui.lua",
 }
 
 for _, name in ipairs(CHUNKS) do
